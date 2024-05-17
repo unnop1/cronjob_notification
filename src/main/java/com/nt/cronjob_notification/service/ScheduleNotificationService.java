@@ -57,8 +57,7 @@ public class ScheduleNotificationService {
         return mapOrderTypeTrgHashMap;
     }
 
-    private String CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON) {
-        HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
+    private String CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON, HashMap<String, Integer> mapOrderTypeTriggerSend) {
         String notificationMessage = "";
         List<String> metricMessages = new ArrayList<String>();
         if (triggerNotificationJSON== null){
@@ -81,7 +80,10 @@ public class ScheduleNotificationService {
                     }
                 }
             }
-            notificationMessage = String.join(" , ", metricMessages);
+            if(metricMessages.size() > 0){
+                notificationMessage = String.join(" , ", metricMessages);
+            }
+            System.out.println("notificationMessage:"+notificationMessage);
         }catch(Exception e){
             return notificationMessage;
         }
@@ -89,31 +91,32 @@ public class ScheduleNotificationService {
         
     }
 
-    private void SendNotification(List<String> messageNotifications, SaMetricNotificationData metricConfig){
-        for (String message : messageNotifications){
-            AddNotification notification = new AddNotification();
-            notification.setAction("SendNotification");
-            notification.setEmail(metricConfig.getEmail());
-            notification.setMessage(message);
-            ExecutorService executorService = Executors.newFixedThreadPool(3); // You can adjust the number of threads as needed
+    private void SendNotification(String action,String messageNotification, SaMetricNotificationData metricConfig){
+        AddNotification notification = new AddNotification();
+        notification.setAction(action);
+        notification.setEmail(metricConfig.getEmail());
+        notification.setMessage(messageNotification);
+        ExecutorService executorService = Executors.newFixedThreadPool(3); // You can adjust the number of threads as needed
 
+        try{
             // Send email
-            executorService.submit(() -> smtpService.SendNotification(message, metricConfig.getEmail()));
+            executorService.submit(() -> smtpService.SendNotification(messageNotification, metricConfig.getEmail()));
 
             // Send Line Notify
             Integer isLineNotifyActive = metricConfig.getLineIsActive();
             if (isLineNotifyActive >= 1) {
-                executorService.submit(() -> lineNotifyService.SendNotification(message, metricConfig.getLineToken()));
+                executorService.submit(() -> lineNotifyService.SendNotification(messageNotification, metricConfig.getLineToken()));
             }
-
-            // Save notification message
-            executorService.submit(() -> distributeService.addNotificationMessage(notification));
-
-            // Shutdown the executor service when all tasks are complete
-            executorService.shutdown();
-
-
+        }catch (Exception e) {
+            notification.setAction("Fail");
         }
+
+        // Save notification message
+        executorService.submit(() -> distributeService.addNotificationMessage(notification));
+
+        // Shutdown the executor service when all tasks are complete
+        executorService.shutdown();
+
 
     }
 
@@ -131,20 +134,21 @@ public class ScheduleNotificationService {
 
     public void CheckMetrics() throws SQLException{
         List<SaMetricNotificationData> metrics = ListAllMetrics();
-        List<String> messageNotifications = new ArrayList<String>();
-        // Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
-        // Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
+        Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
+        Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
+        HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
         
         for (SaMetricNotificationData metric : metrics) {
-            // if (metric.getOmNotConnect().equals(1) && !isRabbitMQStatusOK){
-            //     messageNotifications.add("can not connect to rabbitmq");
-            // }
-            // if (metric.getDbOmNotConnect().equals(1) && !isOMDatabaseStatusOK){
-            //     messageNotifications.add("can not connect to om database");
-            // }
-            messageNotifications.add(CheckNumberOfTriggerInOrderTypeDatabase(metric.getTriggerNotiJson()));
-            if (messageNotifications.size() > 0){
-                SendNotification(messageNotifications, metric);
+            if (metric.getOmNotConnect().equals(1) && !isRabbitMQStatusOK){
+                SendNotification("OmNotConnect","can not connect to rabbitmq",metric);
+            }
+            if (metric.getDbOmNotConnect().equals(1) && !isOMDatabaseStatusOK){
+                SendNotification("DbOmNotConnect","can not connect to om database",metric);
+            }
+            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTriggerNotiJson(), mapOrderTypeTriggerSend);
+            // String errorMessage = "more than setting to metric";
+            if (!errorMessage.isEmpty()){
+                SendNotification("CheckNumberOfTriggerInOrderTypeDatabase",errorMessage, metric);
             }
         }
 
