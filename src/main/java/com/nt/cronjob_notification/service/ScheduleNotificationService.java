@@ -6,6 +6,8 @@ import org.json.JSONObject;
 
 import com.nt.cronjob_notification.model.distribute.manage.metric.MetricsResp;
 import com.nt.cronjob_notification.model.distribute.manage.metric.SaMetricNotificationData;
+import com.nt.cronjob_notification.model.distribute.notification.AddNotification;
+import com.nt.cronjob_notification.model.distribute.trigger.OrderTypeTriggerData;
 import com.nt.cronjob_notification.util.Condition;
 
 import java.sql.SQLException;
@@ -43,42 +45,75 @@ public class ScheduleNotificationService {
         return OracleDBService.getConnection();
     }
 
-    private List<String> CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON) {
-        HashMap<String, Integer> mapOrderTypeTriggerSend = new HashMap<String, Integer>();
-        List<String> messageNotifications = new ArrayList<String>();
-        JSONArray triggerConditions = new JSONArray(triggerNotificationJSON);
-        for (int i = 0; i < triggerConditions.length(); i++) {
-            JSONObject triggerCondition = triggerConditions.getJSONObject(i);
-            // your code here
-            Integer triggerCountConfig = triggerCondition.getInt("");
-            String operatorConfig = triggerCondition.getString("");
-            String OrderTypeNameConfig = triggerCondition.getString("");
-            Integer value = mapOrderTypeTriggerSend.get(OrderTypeNameConfig);
-            if (value != null && triggerCountConfig != null) {
-                System.out.println("Value for key '" + OrderTypeNameConfig + "': " + value);
-                if (Condition.doNumberOperation(operatorConfig, triggerCountConfig, value)){
-                    String alertMessage = "Value for key '" + OrderTypeNameConfig + "': " + value;
-                    messageNotifications.add(alertMessage);
-                }
-            }
+    private HashMap<String, Integer> GetMapOrderTypes(){
+        List<OrderTypeTriggerData> triggerCount = distributeService.mapOrderTypeTriggers().getData();
+        HashMap<String, Integer> mapOrderTypeTrgHashMap = new HashMap<String, Integer>();
+        for(OrderTypeTriggerData trigger : triggerCount){
+            System.out.println("ordertype: " + trigger.getOrdertype_NAME());
+            System.out.println("TotalTrigger: " + trigger.getTotalTrigger());
+            mapOrderTypeTrgHashMap.put(trigger.getOrdertype_NAME(), trigger.getTotalTrigger());
         }
-        return messageNotifications;
+
+        return mapOrderTypeTrgHashMap;
     }
 
-    private void SendNotification(SaMetricNotificationData metricConfig){
-        ExecutorService executorService = Executors.newFixedThreadPool(2); // You can adjust the number of threads as needed
-
-        // Send email
-        executorService.submit(() -> smtpService.SendNotification("message", metricConfig.getEmail()));
-
-        // Send Line Notify
-        Integer isLineNotifyActive = metricConfig.getLineIsActive();
-        if (isLineNotifyActive >= 1) {
-            executorService.submit(() -> lineNotifyService.sendNotification("message", metricConfig.getLineToken()));
+    private String CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON) {
+        HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
+        String notificationMessage = "";
+        List<String> metricMessages = new ArrayList<String>();
+        if (triggerNotificationJSON== null){
+            return notificationMessage;
         }
+        try{
+            JSONArray triggerConditions = new JSONArray(triggerNotificationJSON);
 
-        // Shutdown the executor service when all tasks are complete
-        executorService.shutdown();
+            for (int i = 0; i < triggerConditions.length(); i++) {
+                JSONObject triggerCondition = triggerConditions.getJSONObject(i);
+                Integer triggerCountConfig = triggerCondition.getInt("value");
+                String operatorConfig = triggerCondition.getString("operator");
+                String OrderTypeNameConfig = triggerCondition.getString("order_type").toUpperCase();
+                Integer value = mapOrderTypeTriggerSend.get(OrderTypeNameConfig);
+                if (value != null && triggerCountConfig != null) {
+                    System.out.println("Value for key '" + OrderTypeNameConfig + "': " + value);
+                    if (Condition.doNumberOperation(operatorConfig, triggerCountConfig, value)){
+                        String alertMessage = "OrderType: " + OrderTypeNameConfig + " , total :" + value + "  "+ operatorConfig +" metric value :" + triggerCountConfig;
+                        metricMessages.add(alertMessage);
+                    }
+                }
+            }
+            notificationMessage = String.join(" , ", metricMessages);
+        }catch(Exception e){
+            return notificationMessage;
+        }
+        return notificationMessage;
+        
+    }
+
+    private void SendNotification(List<String> messageNotifications, SaMetricNotificationData metricConfig){
+        for (String message : messageNotifications){
+            AddNotification notification = new AddNotification();
+            notification.setAction("SendNotification");
+            notification.setEmail(metricConfig.getEmail());
+            notification.setMessage(message);
+            ExecutorService executorService = Executors.newFixedThreadPool(3); // You can adjust the number of threads as needed
+
+            // Send email
+            executorService.submit(() -> smtpService.SendNotification(message, metricConfig.getEmail()));
+
+            // Send Line Notify
+            Integer isLineNotifyActive = metricConfig.getLineIsActive();
+            if (isLineNotifyActive >= 1) {
+                executorService.submit(() -> lineNotifyService.SendNotification(message, metricConfig.getLineToken()));
+            }
+
+            // Save notification message
+            executorService.submit(() -> distributeService.addNotificationMessage(notification));
+
+            // Shutdown the executor service when all tasks are complete
+            executorService.shutdown();
+
+
+        }
 
     }
 
@@ -97,32 +132,24 @@ public class ScheduleNotificationService {
     public void CheckMetrics() throws SQLException{
         List<SaMetricNotificationData> metrics = ListAllMetrics();
         List<String> messageNotifications = new ArrayList<String>();
-        Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
-        Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
+        // Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
+        // Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
         
         for (SaMetricNotificationData metric : metrics) {
-            if (metric.getOmNotConnect().equals(1) && !isRabbitMQStatusOK){
-                messageNotifications.add("can not connect to rabbitmq");
-            }
-            if (metric.getDbOmNotConnect().equals(1) && !isOMDatabaseStatusOK){
-                messageNotifications.add("can not connect to om database");
-            }
-            concatenateArrays(messageNotifications, CheckNumberOfTriggerInOrderTypeDatabase(metric.getTriggerNotiJson()));
-             
+            // if (metric.getOmNotConnect().equals(1) && !isRabbitMQStatusOK){
+            //     messageNotifications.add("can not connect to rabbitmq");
+            // }
+            // if (metric.getDbOmNotConnect().equals(1) && !isOMDatabaseStatusOK){
+            //     messageNotifications.add("can not connect to om database");
+            // }
+            messageNotifications.add(CheckNumberOfTriggerInOrderTypeDatabase(metric.getTriggerNotiJson()));
             if (messageNotifications.size() > 0){
-                SendNotification(metric);
+                SendNotification(messageNotifications, metric);
             }
-
-            
         }
-    }
 
-
-    private List<String> concatenateArrays(List<String> arr1,
-            List<String> arr2) {
-        List<String> result = new ArrayList<>();
-        System.arraycopy(arr1, 0, result, 0, arr1.size());
-        System.arraycopy(arr2, 0, result, arr1.size(), arr2.size());
-        return result;
+        
+        distributeService.Logout();
     }
+    
 }

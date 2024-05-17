@@ -7,7 +7,7 @@ import com.nt.cronjob_notification.client.LineNotifyClient;
 @Service
 public class LineNotifyService {
 
-    public void sendNotification(String message, String accessToken) {
+    public void SendNotification(String message, String accessToken) {
         try {
             LineNotifyClient client = new LineNotifyClient(accessToken);
             client.sendNotification(message);

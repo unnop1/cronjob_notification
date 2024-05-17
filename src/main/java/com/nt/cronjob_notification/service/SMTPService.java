@@ -25,12 +25,13 @@ public class SMTPService {
         properties.put("mail.smtp.port", "587");
 
         // Create a session with authentication
-        Session session = Session.getInstance(properties, new Authenticator() {
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(username, password);
-            }
-        });
         try {
+            Session session = Session.getInstance(properties, new Authenticator() {
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, password);
+                }
+            });
+        
             // Create a MimeMessage object
             MimeMessage messageText = new MimeMessage(session);
 

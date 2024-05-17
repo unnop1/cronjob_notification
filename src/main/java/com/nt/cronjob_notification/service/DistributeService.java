@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import com.nt.cronjob_notification.client.DistributeClient;
 import com.nt.cronjob_notification.model.distribute.manage.metric.MetricsResp;
 import com.nt.cronjob_notification.model.distribute.manage.metric.SaMetricNotificationData;
+import com.nt.cronjob_notification.model.distribute.notification.AddNotification;
+import com.nt.cronjob_notification.model.distribute.trigger.OrderTypeTriggerData;
+import com.nt.cronjob_notification.model.distribute.trigger.TriggerOrderTypeCountResp;
 
 
 @Service
@@ -39,15 +42,49 @@ public class DistributeService {
 
     private DistributeClient client;
 
+    private String accessToken = "";
+
+    private void Login(){
+        if (accessToken.isEmpty()){
+            client = new DistributeClient(host, port, device, system, browser);
+            accessToken = client.Login(username, password);
+        }
+    }
+
+    public void Logout(){
+        accessToken = "";
+    }
+
     public MetricsResp ListAllMetrics(){
         System.out.println("username:"+username);
         System.out.println("password:"+password);
         System.out.println("host:"+host);
         System.out.println("port:"+port);
-        client = new DistributeClient(host, port, device, system, browser);
-        client.Login(username, password);
+        Login();
 
         MetricsResp resp = client.ListMetrics();
         return resp;
+    } 
+
+
+    public TriggerOrderTypeCountResp mapOrderTypeTriggers(){
+        System.out.println("username:"+username);
+        System.out.println("password:"+password);
+        System.out.println("host:"+host);
+        System.out.println("port:"+port);
+        Login();
+
+        TriggerOrderTypeCountResp resp = client.OrderTypeTriggers();
+        return resp;
+    } 
+
+    public void addNotificationMessage(AddNotification req){
+        System.out.println("username:"+username);
+        System.out.println("password:"+password);
+        System.out.println("host:"+host);
+        System.out.println("port:"+port);
+        Login();
+
+        client.AddNotificationMessage(req);
     } 
 }

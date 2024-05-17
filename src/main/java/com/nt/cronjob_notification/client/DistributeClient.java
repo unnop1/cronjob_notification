@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nt.cronjob_notification.model.distribute.manage.metric.MetricsResp;
+import com.nt.cronjob_notification.model.distribute.notification.AddNotification;
+import com.nt.cronjob_notification.model.distribute.trigger.OrderTypeTriggerData;
+import com.nt.cronjob_notification.model.distribute.trigger.TriggerOrderTypeCountResp;
 
 
 public class DistributeClient {
@@ -91,7 +94,7 @@ public class DistributeClient {
         MetricsResp metricsResp = null;
         try {
             URL url = new URL(String.format(
-                    "http://%s:%s/manage_system/metrics?draw=11&order[0][dir]=DESC&order[0][name]=UPDATED_DATE&start=0&order_type_id=1",
+                    "http://%s:%s/manage_system/metrics?draw=11&order[0][dir]=DESC&order[0][name]=UPDATED_DATE",
                     host,
                     port
                 )
@@ -101,7 +104,7 @@ public class DistributeClient {
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Authorization", String.format("Bearer %s", accessToken));
             int responseCode = connection.getResponseCode();
-            System.out.println("Response Code: " + responseCode);
+
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 StringBuilder response = new StringBuilder();
@@ -110,7 +113,6 @@ public class DistributeClient {
                     response.append(inputLine);
                 }
                 in.close();
-                System.out.println("Response: " + response.toString());
 
                 // Parse JSON response into MetricsResp object using ObjectMapper
                 ObjectMapper objectMapper = new ObjectMapper();
@@ -122,5 +124,86 @@ public class DistributeClient {
             e.printStackTrace();
         }
         return metricsResp;
+    }
+
+    public TriggerOrderTypeCountResp OrderTypeTriggers(){
+        TriggerOrderTypeCountResp triggerCountResp = null;
+        try {
+            URL url = new URL(String.format(
+                    "http://%s:%s/trigger/count/by_ordertype",
+                    host,
+                    port
+                )
+            );
+            System.out.println("metric accessToken:"+accessToken);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Authorization", String.format("Bearer %s", accessToken));
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                // Parse JSON response into MetricsResp object using ObjectMapper
+                ObjectMapper objectMapper = new ObjectMapper();
+                triggerCountResp = objectMapper.readValue(response.toString(), TriggerOrderTypeCountResp.class);
+            } else {
+                System.out.println("GET request failed.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return triggerCountResp;
+    }
+
+    public void AddNotificationMessage(AddNotification req){
+        try {
+            URL url = new URL(String.format(
+                    "http://%s:%s/notification/create",
+                    host,
+                    port
+                )
+            );
+            System.out.println("metric accessToken:" + accessToken);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Authorization", String.format("Bearer %s", accessToken));
+            connection.setRequestProperty("Content-Type", "application/json; utf-8"); // Set content type to JSON
+            connection.setDoOutput(true); // Allow output to the connection
+
+            // Use String.format to create the body message
+            String jsonInputString = String.format(
+                "{\"action\": \"%s\", \"email\": \"%s\", \"message\": \"%s\"}", 
+                req.getAction(), req.getEmail(), req.getMessage()
+            );
+
+            // Write the body message to the connection's output stream
+            try(OutputStream os = connection.getOutputStream()) {
+                byte[] input = jsonInputString.getBytes("utf-8");
+                os.write(input, 0, input.length);           
+            }
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+                System.out.println("Response: " + response.toString()); // Print the response
+            } else {
+                System.out.println("POST request failed with response code: " + responseCode);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
