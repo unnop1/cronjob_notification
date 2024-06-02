@@ -1,18 +1,19 @@
 package com.nt.cronjob_notification.service;
 
 import java.util.Properties;
-import javax.mail.*;
+import jakarta.mail.*;
+import jakarta.mail.internet.*;
 import org.springframework.stereotype.Service;
-import javax.mail.internet.*;
 
 @Service
 public class SMTPService {
-    public void SendNotification(String message, String toEmail){
+
+    public void SendNotification(String message, String toEmail) {
         // Email configurations
-        String host = "smtp.example.com";
-        String username = "your_email@example.com";
-        String password = "your_password";
-        String from = "your_email@example.com";
+        String host = "ncmail.ntplc.co.th";
+        String username = "ommfe.alarm@nc.ntplc.co.th";
+        String password = "pqASCzDSUQKSLW81";
+        String from = "alarm_red@nt.com";
         String to = toEmail;
         String subject = "Notification Alert from Metric Cronjob";
         String body = message;
@@ -22,7 +23,11 @@ public class SMTPService {
         properties.put("mail.smtp.auth", "true");
         properties.put("mail.smtp.starttls.enable", "true");
         properties.put("mail.smtp.host", host);
-        properties.put("mail.smtp.port", "587");
+        properties.put("mail.smtp.port", "465");  // Port for SSL
+        properties.put("mail.smtp.socketFactory.port", "465");
+        properties.put("mail.smtp.socketFactory.class", "jakarta.net.ssl.SSLSocketFactory");
+        properties.put("mail.smtp.ssl.enable", "true");
+        properties.put("mail.smtp.ssl.trust", host); // Optional: trust the host
 
         // Create a session with authentication
         try {
@@ -31,7 +36,7 @@ public class SMTPService {
                     return new PasswordAuthentication(username, password);
                 }
             });
-        
+
             // Create a MimeMessage object
             MimeMessage messageText = new MimeMessage(session);
 
