@@ -13,7 +13,7 @@ public class SMTPService {
         String host = "ncmail.ntplc.co.th";
         String username = "ommfe.alarm@nc.ntplc.co.th";
         String password = "pqASCzDSUQKSLW81";
-        String from = "alarm_red@nt.com";
+        String from = "ommfe.alarm@nc.ntplc.co.th";
         String to = toEmail;
         String subject = "Notification Alert from Metric Cronjob";
         String body = message;
