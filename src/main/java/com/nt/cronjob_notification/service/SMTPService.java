@@ -3,18 +3,26 @@ package com.nt.cronjob_notification.service;
 import java.util.Properties;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SMTPService {
+    @Value("${smtp.host}")
+    private String host = "ncmail.ntplc.co.th";
+
+    @Value("${smtp.username}")
+    private String username = "ommfe.alarm@nc.ntplc.co.th";
+
+    @Value("${smtp.password}")
+    private String password = "pqASCzDSUQKSLW81";
+
+    @Value("${smtp.from}")
+    private String from = "ommfe.alarm@nc.ntplc.co.th";
 
     public void SendNotification(String message, String toEmail) {
         // Email configurations
-        String host = "ncmail.ntplc.co.th";
-        String username = "ommfe.alarm@nc.ntplc.co.th";
-        String password = "pqASCzDSUQKSLW81";
-        String from = "ommfe.alarm@nc.ntplc.co.th";
-        String to = toEmail;
         String subject = "Notification Alert from Metric Cronjob";
         String body = message;
 
@@ -44,7 +52,7 @@ public class SMTPService {
             messageText.setFrom(new InternetAddress(from));
 
             // Set To: header field
-            messageText.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+            messageText.addRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
 
             // Set Subject: header field
             messageText.setSubject(subject);
