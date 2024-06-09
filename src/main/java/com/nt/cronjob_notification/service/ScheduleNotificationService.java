@@ -4,6 +4,10 @@ import org.springframework.stereotype.Service;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.nt.cronjob_notification.entity.NotificationMsgEntity;
+import com.nt.cronjob_notification.entity.OrderTypeEntity;
+import com.nt.cronjob_notification.entity.SaMetricNotificationEntity;
+import com.nt.cronjob_notification.entity.view.trigger.TriggerOrderTypeCount;
 import com.nt.cronjob_notification.model.distribute.manage.metric.MetricsResp;
 import com.nt.cronjob_notification.model.distribute.manage.metric.SaMetricNotificationData;
 import com.nt.cronjob_notification.model.distribute.notification.AddNotification;
@@ -26,15 +30,18 @@ public class ScheduleNotificationService {
     @Autowired
     private  DistributeService distributeService;
 
+    @Autowired
+    private  NativeConnectionService nativeConnectionService;
+
     @Autowired 
     private  SMTPService smtpService;
 
     @Autowired
     private  LineNotifyService lineNotifyService;
 
-    private List<SaMetricNotificationData> ListAllMetrics(){
-        MetricsResp metrics = distributeService.ListAllMetrics();
-        return metrics.getData();
+    private List<SaMetricNotificationEntity> ListAllMetrics(){
+        List<SaMetricNotificationEntity> metrics = distributeService.ListAllMetrics();
+        return metrics;
     } 
 
     private boolean CheckConnectOMAndTopUpRabbitMQ() {
@@ -42,16 +49,16 @@ public class ScheduleNotificationService {
     }
 
     private boolean CheckConnectOMDatabase() throws SQLException {
-        return OracleDBService.getConnection();
+        return nativeConnectionService.checkNativeConnection();
     }
 
     private HashMap<String, Integer> GetMapOrderTypes(){
-        List<OrderTypeTriggerData> triggerCount = distributeService.mapOrderTypeTriggers().getData();
+        List<TriggerOrderTypeCount> triggerCount = distributeService.mapOrderTypeTriggers();
         HashMap<String, Integer> mapOrderTypeTrgHashMap = new HashMap<String, Integer>();
-        for(OrderTypeTriggerData trigger : triggerCount){
-            System.out.println("ordertype: " + trigger.getOrdertype_NAME());
+        for(TriggerOrderTypeCount trigger : triggerCount){
+            System.out.println("ordertype: " + trigger.getORDERTYPE_NAME());
             System.out.println("TotalTrigger: " + trigger.getTotalTrigger());
-            mapOrderTypeTrgHashMap.put(trigger.getOrdertype_NAME(), trigger.getTotalTrigger());
+            mapOrderTypeTrgHashMap.put(trigger.getORDERTYPE_NAME(), trigger.getTotalTrigger());
         }
 
         return mapOrderTypeTrgHashMap;
@@ -91,8 +98,8 @@ public class ScheduleNotificationService {
         
     }
 
-    private void SendNotification(String action,String messageNotification, SaMetricNotificationData metricConfig){
-        AddNotification notification = new AddNotification();
+    private void SendNotification(String action,String messageNotification, SaMetricNotificationEntity metricConfig){
+        NotificationMsgEntity notification = new NotificationMsgEntity();
         notification.setAction(action);
         notification.setEmail(metricConfig.getEmail());
         notification.setMessage(messageNotification);
@@ -103,9 +110,9 @@ public class ScheduleNotificationService {
             executorService.submit(() -> smtpService.SendNotification(messageNotification, metricConfig.getEmail()));
 
             // Send Line Notify
-            Integer isLineNotifyActive = metricConfig.getLineIsActive();
+            Integer isLineNotifyActive = metricConfig.getLINE_IS_ACTIVE();
             if (isLineNotifyActive >= 1) {
-                executorService.submit(() -> lineNotifyService.SendNotification(messageNotification, metricConfig.getLineToken()));
+                executorService.submit(() -> lineNotifyService.SendNotification(messageNotification, metricConfig.getLINE_TOKEN()));
             }
         }catch (Exception e) {
             notification.setAction("Fail");
@@ -121,39 +128,36 @@ public class ScheduleNotificationService {
     }
 
     public void test(){
-        List<SaMetricNotificationData> lists =ListAllMetrics();
-        SaMetricNotificationData tmp = lists.get(0);
-        System.out.println(tmp.getEmail());
-        System.out.println(tmp.getLineToken());
-        System.out.println(tmp.getTriggerNotiJson());
-        System.out.println(tmp.getUpdatedBy());
-        System.out.println(tmp.getOmNotConnect());
-        System.out.println(tmp.getTopupNotConnect());
-        System.out.println(tmp.getDbOmNotConnect());
+        // List<SaMetricNotificationData> lists =ListAllMetrics();
+        // SaMetricNotificationData tmp = lists.get(0);
+        // System.out.println(tmp.getEmail());
+        // System.out.println(tmp.getLineToken());
+        // System.out.println(tmp.getTriggerNotiJson());
+        // System.out.println(tmp.getUpdatedBy());
+        // System.out.println(tmp.getOmNotConnect());
+        // System.out.println(tmp.getTopupNotConnect());
+        // System.out.println(tmp.getDbOmNotConnect());
     }
 
     public void CheckMetrics() throws SQLException{
-        List<SaMetricNotificationData> metrics = ListAllMetrics();
+        List<SaMetricNotificationEntity> metrics = ListAllMetrics();
         Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
         Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
         HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
         
-        for (SaMetricNotificationData metric : metrics) {
-            if (metric.getOmNotConnect().equals(1) && !isRabbitMQStatusOK){
+        for (SaMetricNotificationEntity metric : metrics) {
+            if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
                 SendNotification("OmNotConnect","can not connect to rabbitmq",metric);
             }
-            if (metric.getDbOmNotConnect().equals(1) && !isOMDatabaseStatusOK){
+            if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
                 SendNotification("DbOmNotConnect","can not connect to om database",metric);
             }
-            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTriggerNotiJson(), mapOrderTypeTriggerSend);
+            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
             // String errorMessage = "more than setting to metric";
             if (!errorMessage.isEmpty()){
                 SendNotification("CheckNumberOfTriggerInOrderTypeDatabase",errorMessage, metric);
             }
         }
-
-        
-        distributeService.Logout();
     }
     
 }

@@ -17,6 +17,6 @@ public class ScheduledTasks {
 
     @Scheduled(cron = "0 * * * * *") // Cron expression for running every minute
     public void execute() throws SQLException {
-        scheduleNotificationService.CheckMetrics();
+        scheduleNotificationService.test();
     }
 }

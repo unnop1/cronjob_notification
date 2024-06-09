@@ -5,15 +5,13 @@ import org.springframework.stereotype.Service;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.Address;
 import com.rabbitmq.client.ConnectionFactory;
 
 @Service
 public class RabbitMqService {
-    @Value("${spring.rabbitmq.host}")
-    private String rabbitHost;
-
-    @Value("${spring.rabbitmq.port}")
-    private int rabbitPort;
+    @Value("${spring.rabbitmq.addresses}")
+    private String rabbitAddresses;
 
     @Value("${spring.rabbitmq.username}")
     private String rabbitUsername;
@@ -21,22 +19,28 @@ public class RabbitMqService {
     @Value("${spring.rabbitmq.password}")
     private String rabbitPassword;
 
-    public RabbitMqService(){
-        
+    @Value("${spring.rabbitmq.virtual-host}")
+    private String rabbitVirtualHost;
+
+    public RabbitMqService() {
     }
 
-    public boolean checkConnection(){
+    public boolean checkConnection() {
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost(rabbitHost);
-        factory.setPort(rabbitPort);
         factory.setUsername(rabbitUsername);
         factory.setPassword(rabbitPassword);
-        try (Connection connection = factory.newConnection();
-            Channel channel = connection.createChannel()) {
-            return true;
+        factory.setVirtualHost(rabbitVirtualHost);
+
+        try {
+            Address[] addresses = Address.parseAddresses(rabbitAddresses);
+            try (Connection connection = factory.newConnection(addresses);
+                 Channel channel = connection.createChannel()) {
+                return true;
+            }
         } catch (Exception e) {
             System.out.println("Failed to check connection to RabbitMQ: " + e.getMessage());
             return false;
-        } 
+        }
     }
 }
+
