@@ -13,7 +13,9 @@ import com.nt.cronjob_notification.model.distribute.manage.metric.SaMetricNotifi
 import com.nt.cronjob_notification.model.distribute.notification.AddNotification;
 import com.nt.cronjob_notification.model.distribute.trigger.OrderTypeTriggerData;
 import com.nt.cronjob_notification.util.Condition;
+import com.nt.cronjob_notification.util.Convert;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -139,7 +141,7 @@ public class ScheduleNotificationService {
         // System.out.println(tmp.getDbOmNotConnect());
     }
 
-    public void CheckMetrics() throws SQLException{
+    public void CheckMetrics() throws SQLException, IOException{
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
         Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
         Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
@@ -152,7 +154,9 @@ public class ScheduleNotificationService {
             if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
                 SendNotification("DbOmNotConnect","can not connect to om database",metric);
             }
-            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
+
+            String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
+            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(triggerNotiJson, mapOrderTypeTriggerSend);
             // String errorMessage = "more than setting to metric";
             if (!errorMessage.isEmpty()){
                 SendNotification("CheckNumberOfTriggerInOrderTypeDatabase",errorMessage, metric);

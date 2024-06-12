@@ -1,5 +1,6 @@
 package com.nt.cronjob_notification.entity;
 
+import java.sql.Clob;
 import java.sql.Timestamp;
 
 import jakarta.persistence.*;
@@ -36,7 +37,7 @@ public class SaMetricNotificationEntity {
     private Integer TOPUP_NOT_CONNECT = 0;
 
     @Column(name = "TRIGGER_NOTI_JSON", unique = false,nullable = true)
-    private String TRIGGER_NOTI_JSON = null;
+    private Clob TRIGGER_NOTI_JSON = null;
 
     @Column(name = "UPDATED_DATE", unique = false,nullable = true)
     private Timestamp UPDATED_DATE = null;
