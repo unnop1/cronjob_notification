@@ -22,9 +22,6 @@ public class RabbitMqService {
     @Value("${spring.rabbitmq.virtual-host}")
     private String rabbitVirtualHost;
 
-    public RabbitMqService() {
-    }
-
     public boolean checkConnection() {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setUsername(rabbitUsername);
