@@ -15,7 +15,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-@Table (name = "sa_metric_notification")
+@Table (name = "SA_METRIC_NOTIFICATION")
 public class SaMetricNotificationEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sa_metric_notification_seq")

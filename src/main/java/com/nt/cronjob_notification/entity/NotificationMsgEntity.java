@@ -20,7 +20,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-@Table(name = "notification_message")
+@Table(name = "NOTIFICATION_MESSAGE")
 public class NotificationMsgEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "notification_message_seq")
