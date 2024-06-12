@@ -21,7 +21,7 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-			<!-- <exclusions>
+			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-starter-tomcat</artifactId>
@@ -34,9 +34,9 @@
 					<groupId>ch.qos.logback</groupId>
 					<artifactId>logback-classic</artifactId>
 				</exclusion>
-			</exclusions> -->
+			</exclusions>
 		</dependency>
-		<!-- <dependency>
+		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>1.4.14</version>
@@ -47,7 +47,7 @@
 			<artifactId>logback-core</artifactId>
 			<version>1.4.14</version>
 			<scope>test</scope>
-		</dependency>	 -->
+		</dependency>	
 
 		<dependency>
 			<groupId>com.zaxxer</groupId>
