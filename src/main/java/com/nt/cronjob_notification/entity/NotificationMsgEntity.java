@@ -28,15 +28,15 @@ public class NotificationMsgEntity {
     @Column(name = "ID")
     private Long ID;
 
-    @Column(name = "action", nullable = true)
+    @Column(name = "ACTION", nullable = true)
     private String action=null;
 
-    @Column(name = "email", nullable = true)
+    @Column(name = "EMAIL", nullable = true)
     private String email=null;
 
-    @Column(name = "message", nullable = true)
+    @Column(name = "MESSAGE", nullable = true)
     private String message=null;
 
-    @Column(name = "created_date", nullable = true)
+    @Column(name = "CREATED_DATE", nullable = true)
     private Timestamp created_date=null;
 }

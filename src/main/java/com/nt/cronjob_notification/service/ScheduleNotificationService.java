@@ -139,6 +139,7 @@ public class ScheduleNotificationService {
         // System.out.println(tmp.getOmNotConnect());
         // System.out.println(tmp.getTopupNotConnect());
         // System.out.println(tmp.getDbOmNotConnect());
+        smtpService.SendNotification("test", "arxzerocloud@gmail.com");
     }
 
     public void CheckMetrics() throws SQLException, IOException{
