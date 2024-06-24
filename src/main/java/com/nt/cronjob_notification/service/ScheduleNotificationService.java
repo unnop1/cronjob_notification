@@ -8,6 +8,7 @@ import com.nt.cronjob_notification.entity.NotificationMsgEntity;
 import com.nt.cronjob_notification.entity.OrderTypeEntity;
 import com.nt.cronjob_notification.entity.SaMetricNotificationEntity;
 import com.nt.cronjob_notification.entity.view.trigger.TriggerOrderTypeCount;
+import com.nt.cronjob_notification.log.LogFlie;
 import com.nt.cronjob_notification.model.distribute.manage.metric.MetricsResp;
 import com.nt.cronjob_notification.model.distribute.manage.metric.SaMetricNotificationData;
 import com.nt.cronjob_notification.model.distribute.notification.AddNotification;
@@ -17,7 +18,9 @@ import com.nt.cronjob_notification.util.Convert;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -40,6 +43,8 @@ public class ScheduleNotificationService {
 
     @Autowired
     private  LineNotifyService lineNotifyService;
+
+    private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     private List<SaMetricNotificationEntity> ListAllMetrics(){
         List<SaMetricNotificationEntity> metrics = distributeService.ListAllMetrics();
@@ -94,7 +99,7 @@ public class ScheduleNotificationService {
             }
             System.out.println("notificationMessage:"+notificationMessage);
         }catch(Exception e){
-            return notificationMessage;
+            return notificationMessage+ " "+e.getMessage();
         }
         return notificationMessage;
         
@@ -150,17 +155,57 @@ public class ScheduleNotificationService {
         
         for (SaMetricNotificationEntity metric : metrics) {
             if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
-                SendNotification("OmNotConnect","can not connect to rabbitmq",metric);
+                String alertAction = "OmNotConnect";
+                String alertMessage = "can not connect to rabbitmq";
+
+                SendNotification(alertAction,alertMessage,metric);
+
+                LogFlie.logMessage(
+                "ScheduleNotificationService", 
+                "connect",
+                String.format(
+                    "%s %s %s",
+                    df.format(new Date()),
+                    alertAction,
+                    alertMessage
+                )
+            );
             }
             if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
-                SendNotification("DbOmNotConnect","can not connect to om database",metric);
+                String alertAction = "DbOmNotConnect";
+                String alertMessage = "can not connect to om database";
+                
+                SendNotification(alertAction,alertMessage,metric);
+                
+                LogFlie.logMessage(
+                "ScheduleNotificationService", 
+                "connect",
+                String.format(
+                    "%s %s %s",
+                    df.format(new Date()),
+                    alertAction,
+                    alertMessage
+                )
+                );
             }
 
             String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
             String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(triggerNotiJson, mapOrderTypeTriggerSend);
             // String errorMessage = "more than setting to metric";
             if (!errorMessage.isEmpty()){
-                SendNotification("CheckNumberOfTriggerInOrderTypeDatabase",errorMessage, metric);
+                String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
+                SendNotification(alertAction,errorMessage, metric);
+                
+                LogFlie.logMessage(
+                    "ScheduleNotificationService", 
+                    "trigger_overload",
+                    String.format(
+                        "%s %s %s",
+                        df.format(new Date()),
+                        alertAction,
+                        errorMessage
+                    )
+                    );
             }
         }
     }
