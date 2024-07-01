@@ -162,7 +162,7 @@ public class ScheduleNotificationService {
 
                 LogFlie.logMessage(
                 "ScheduleNotificationService", 
-                "connect",
+                String.format("metric/%s/connect",LogFlie.dateFolderName()),
                 String.format(
                     "%s %s %s",
                     df.format(new Date()),
@@ -179,7 +179,7 @@ public class ScheduleNotificationService {
                 
                 LogFlie.logMessage(
                 "ScheduleNotificationService", 
-                "connect",
+                String.format("metric/%s/connect",LogFlie.dateFolderName()),
                 String.format(
                     "%s %s %s",
                     df.format(new Date()),
@@ -198,7 +198,7 @@ public class ScheduleNotificationService {
                 
                 LogFlie.logMessage(
                     "ScheduleNotificationService", 
-                    "trigger_overload",
+                    String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
                     String.format(
                         "%s %s %s",
                         df.format(new Date()),

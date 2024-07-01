@@ -11,23 +11,22 @@ import org.springframework.boot.logging.java.SimpleFormatter;
 
 public class LogFlie {
 
+    public static String dateFolderName() {
+        Date date = new Date();
+        SimpleDateFormat df = new SimpleDateFormat("MMyyyy");
+        return df.format(date);
+    }
+
 	public static void logMessage(String className, String path, String messageLog) {
         Logger logger = Logger.getLogger(className);
 
         try {
             Date date = new Date();
-            SimpleDateFormat df = new SimpleDateFormat("MMyyyy");
             
             // Use JBoss data directory
-            String jbossDataDir = System.getProperty("jboss.server.data.dir");
-            if (jbossDataDir == null) {
-                jbossDataDir = "";
-            }
-            
+            String jbossDataDir = "./data/logs/cronjob_notification/";
+
             String pathLog = jbossDataDir + "/" + path + "/";
-            if(jbossDataDir.isBlank()){
-                pathLog = path + "/";
-            }
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
             String fileName = dateFormat.format(date) + ".txt";
 
@@ -41,7 +40,7 @@ public class LogFlie {
 
             // Configure FileHandler for log rotation
             // Here, we set a file size limit of 1MB (1 * 1024 * 1024 bytes) and a maximum of 5 log files.
-            FileHandler fileHandler = new FileHandler(pathLog + "/" + fileName, 1024 * 1024, 5, true);
+            FileHandler fileHandler = new FileHandler(pathLog + "/" + fileName, true);
             fileHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(fileHandler);
             logger.setUseParentHandlers(false); // Prevents logging to console
