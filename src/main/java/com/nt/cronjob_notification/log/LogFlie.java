@@ -28,7 +28,7 @@ public class LogFlie {
 
             String pathLog = jbossDataDir + "/" + path + "/";
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-            String fileName = dateFormat.format(date) + ".txt";
+            String fileName = dateFormat.format(date) + ".log";
 
             // Ensure directory exists, create if it doesn't
             File dir = new File(pathLog);
