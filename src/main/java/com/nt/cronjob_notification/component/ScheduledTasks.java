@@ -2,6 +2,7 @@ package com.nt.cronjob_notification.component;
 
 import org.springframework.scheduling.annotation.Scheduled;
 
+import java.io.IOException;
 import java.sql.SQLException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ public class ScheduledTasks {
     private ScheduleNotificationService scheduleNotificationService;
 
     @Scheduled(cron = "0 * * * * *") // Cron expression for running every minute
-    public void execute() throws SQLException {
-        scheduleNotificationService.test();
+    public void execute() throws SQLException, IOException {
+        scheduleNotificationService.CheckMetrics();
     }
 }
