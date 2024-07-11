@@ -35,6 +35,7 @@ public class SMTPService {
         properties.put("mail.smtp.socketFactory.port", "465");
         properties.put("mail.smtp.socketFactory.class", "jakarta.net.ssl.SSLSocketFactory");
         properties.put("mail.smtp.ssl.enable", "true");
+        properties.put("mail.debug", "true");
         properties.put("mail.smtp.ssl.trust", host); // Optional: trust the host
 
         // Create a session with authentication
