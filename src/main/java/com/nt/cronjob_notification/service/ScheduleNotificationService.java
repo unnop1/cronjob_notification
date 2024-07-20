@@ -20,11 +20,13 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ScheduleNotificationService {
@@ -105,33 +107,61 @@ public class ScheduleNotificationService {
         
     }
 
-    private void SendNotification(String action,String messageNotification, SaMetricNotificationEntity metricConfig){
-        NotificationMsgEntity notification = new NotificationMsgEntity();
-        notification.setAction(action);
-        notification.setEmail(metricConfig.getEmail());
-        notification.setMessage(messageNotification);
-        ExecutorService executorService = Executors.newFixedThreadPool(3); // You can adjust the number of threads as needed
+    private void SendNotification(String action, String messageNotification, SaMetricNotificationEntity metricConfig) {
+        List<String> emailList = Arrays.asList(metricConfig.getEmail().split(","));
+        ExecutorService executorService = Executors.newFixedThreadPool(3); // Adjust the number of threads as needed
 
-        try{
-            // Send email
-            executorService.submit(() -> smtpService.SendNotification(messageNotification, metricConfig.getEmail()));
+        try {
+            for (String email : emailList) {
+                NotificationMsgEntity notification = new NotificationMsgEntity();
+                notification.setAction(action);
+                notification.setEmail(email);
+                notification.setMessage(messageNotification);
 
-            // Send Line Notify
-            Integer isLineNotifyActive = metricConfig.getLINE_IS_ACTIVE();
-            if (isLineNotifyActive >= 1) {
-                executorService.submit(() -> lineNotifyService.SendNotification(messageNotification, metricConfig.getLINE_TOKEN()));
+                // Send email
+                executorService.submit(() -> {
+                    try {
+                        smtpService.SendNotification(messageNotification, email);
+                    } catch (Exception e) {
+                        notification.setAction("Fail");
+                        e.printStackTrace();
+                    }
+                });
+
+                // Send Line Notify
+                Integer isLineNotifyActive = metricConfig.getLINE_IS_ACTIVE();
+                if (isLineNotifyActive >= 1) {
+                    executorService.submit(() -> {
+                        try {
+                            lineNotifyService.SendNotification(messageNotification, metricConfig.getLINE_TOKEN());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+
+                // Save notification message
+                executorService.submit(() -> {
+                    try {
+                        distributeService.addNotificationMessage(notification);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
             }
-        }catch (Exception e) {
-            notification.setAction("Fail");
+        } finally {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                    if (!executorService.awaitTermination(60, TimeUnit.SECONDS))
+                        System.err.println("ExecutorService did not terminate");
+                }
+            } catch (InterruptedException ie) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
-
-        // Save notification message
-        executorService.submit(() -> distributeService.addNotificationMessage(notification));
-
-        // Shutdown the executor service when all tasks are complete
-        executorService.shutdown();
-
-
     }
 
     public void test(){
@@ -154,6 +184,9 @@ public class ScheduleNotificationService {
         HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
         
         for (SaMetricNotificationEntity metric : metrics) {
+            if (metric.getTRIGGER_IS_ACTIVE().equals(0)){
+                continue;
+            }
             if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
                 String alertAction = "OmNotConnect";
                 String alertMessage = "can not connect to rabbitmq";
@@ -189,8 +222,8 @@ public class ScheduleNotificationService {
                 );
             }
 
-            String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
-            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(triggerNotiJson, mapOrderTypeTriggerSend);
+            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
+            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
             // String errorMessage = "more than setting to metric";
             if (!errorMessage.isEmpty()){
                 String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";

@@ -10,16 +10,60 @@ import org.springframework.stereotype.Service;
 @Service
 public class SMTPService {
     @Value("${smtp.host}")
-    private String host = "ncmail.ntplc.co.th";
-
+    private String host = "red.nt.alarm@gmail.com";
+    
+    
     @Value("${smtp.username}")
-    private String username = "ommfe.alarm@nc.ntplc.co.th";
+    private String username = "red.nt.alarm@gmail.com";
 
     @Value("${smtp.password}")
-    private String password = "pqASCzDSUQKSLW81";
+    private String password = "redd2023!";
 
     @Value("${smtp.from}")
-    private String from = "ommfe.alarm@nc.ntplc.co.th";
+    private String from = "red.nt.alarm@gmail.com";
+
+    public void SendGmailNotification(String message, String toEmail) {
+        // Email configurations
+        String subject = "Notification Alert from Metric Cronjob";
+        String body = message;
+
+        // Set SMTP server properties
+        Properties properties = new Properties();
+        properties.put("mail.smtp.auth", "true");
+        properties.put("mail.smtp.starttls.enable", "true");
+        properties.put("mail.smtp.host", "smtp.gmail.com");
+        properties.put("mail.smtp.port", "587");
+
+        // Create a session with authentication
+        try {
+            Session session = Session.getInstance(properties, new Authenticator() {
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, password);
+                }
+            });
+
+            // Create a MimeMessage object
+            MimeMessage messageText = new MimeMessage(session);
+
+            // Set From: header field
+            messageText.setFrom(new InternetAddress(from));
+
+            // Set To: header field
+            messageText.addRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
+
+            // Set Subject: header field
+            messageText.setSubject(subject);
+
+            // Set the actual message
+            messageText.setText(body);
+
+            // Send the message
+            Transport.send(messageText);
+            System.out.println("Email sent successfully!");
+        } catch (MessagingException mex) {
+            mex.printStackTrace();
+        }
+    }
 
     public void SendNotification(String message, String toEmail) {
         // Email configurations
