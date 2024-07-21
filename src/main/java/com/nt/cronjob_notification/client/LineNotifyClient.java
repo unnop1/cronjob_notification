@@ -19,62 +19,45 @@ public class LineNotifyClient {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    private String accessToken;
+    public LineNotifyResponse sendNotification(String message, String accessToken) throws IOException {
+        try {
+            String apiUrl = "https://notify-api.line.me/api/notify";
 
-    public LineNotifyClient(String accessToken){
-        this.accessToken = accessToken;
-    }
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Authorization", "Bearer " + accessToken);
+            connection.setDoOutput(true);
 
-    public LineNotifyResponse sendNotification(String message) throws IOException {
-        // Set the URL
-        URL url = new URL("https://notify-api.line.me/api/notify");
+            String postData = "message=" + message;
 
-        // Open the connection
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-        // Set request method to POST
-        conn.setRequestMethod("POST");
-
-        // Set request headers
-        conn.setRequestProperty("Authorization", String.format("Bearer " , accessToken));
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-
-        // Enable input/output
-        conn.setDoOutput(true);
-
-        // Construct form data
-        String formData = "message=" + message;
-
-        // Write form data to output stream
-        try (OutputStream os = conn.getOutputStream()) {
-            byte[] input = formData.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
-        }
-
-        // Send the request
-        conn.connect();
-
-        // Get the response code
-        int responseCode = conn.getResponseCode();
-
-        // Read the response JSON
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                response.append(line);
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = postData.getBytes("utf-8");
+                os.write(input, 0, input.length);
             }
 
-            // Parse JSON into LineNotifyResponse object
-            LineNotifyResponse notifyResponse = objectMapper.readValue(response.toString(), LineNotifyResponse.class);
+            StringBuilder responseMessage = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
+                String responseLine;
+                while ((responseLine = br.readLine()) != null) {
+                    responseMessage.append(responseLine.trim());
+                }
+            }
 
-            // Disconnect the connection
-            conn.disconnect();
+            int responseCode = connection.getResponseCode();
+            System.out.println("Response Code: " + responseCode);
 
-            // Print response status code
-            System.out.println("Response Status Code: " + responseCode);
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                // Parse JSON into LineNotifyResponse object
+                LineNotifyResponse notifyResponse = objectMapper.readValue(responseMessage.toString(), LineNotifyResponse.class);
+                return notifyResponse;
+            } else {
+                return null;
+            }
 
-            return notifyResponse;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

@@ -9,8 +9,8 @@ public class LineNotifyService {
 
     public void SendNotification(String message, String accessToken) {
         try {
-            LineNotifyClient client = new LineNotifyClient(accessToken);
-            client.sendNotification(message);
+            LineNotifyClient client = new LineNotifyClient();
+            client.sendNotification(message, accessToken);
         } catch (Exception e) {
             System.err.println("An error occurred: " + e.getMessage());
         }

@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import org.springframework.boot.logging.java.SimpleFormatter;
 
@@ -40,16 +41,18 @@ public class LogFlie {
 
             // Configure FileHandler for log rotation
             // Here, we set a file size limit of 1MB (1 * 1024 * 1024 bytes) and a maximum of 5 log files.
+            // System.out.println("save log to : " + pathLog+"/"+fileName);
             FileHandler fileHandler = new FileHandler(pathLog + "/" + fileName, true);
-            fileHandler.setFormatter(new SimpleFormatter());
+            fileHandler.setFormatter(new PlainTextFormatter());
             logger.addHandler(fileHandler);
             logger.setUseParentHandlers(false); // Prevents logging to console
 
+            // Set log level to ensure the message is logged
+            logger.setLevel(Level.INFO);
+            fileHandler.setLevel(Level.INFO);
+
             // Log the message
             logger.info(messageLog);
-
-            // Close the handler to ensure the log is written
-            fileHandler.close();
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error creating directory or file: " + e.getMessage());

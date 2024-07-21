@@ -1,43 +1,59 @@
 package com.nt.cronjob_notification.service;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import jakarta.annotation.PostConstruct;
 
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-
-import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class NativeConnectionService {
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    private static final Logger logger = LoggerFactory.getLogger(NativeConnectionService.class);
 
-    public Boolean checkNativeConnection() {
-        Connection connection = null;
+    @Value("${spring.datasource.jndi-name}")
+    private String jndiName;
+
+    private DataSource dataSource;
+
+    @PostConstruct
+    public void init() {
         try {
-            connection = entityManager.unwrap(Connection.class);
-
-            // Perform a simple query to check the connection
-            try (Statement stmt = connection.createStatement()) {
-                boolean isValid = stmt.execute("SELECT 1");
-                System.out.println("Native connection is valid: " + isValid);
-                return isValid;
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
+            Context ctx = new InitialContext();
+            this.dataSource = (DataSource) ctx.lookup(jndiName);
+            logger.info("JNDI DataSource initialized successfully: " + jndiName);
+        } catch (NamingException e) {
+            logger.error("Failed to lookup JNDI DataSource: " + e.getMessage(), e);
         }
-        return false;
+    }
+
+    /**
+     * Checks the native connection.
+     *
+     * @return true if the native connection is valid, false otherwise
+     */
+    public Boolean checkNativeConnection() {
+        if (dataSource == null) {
+            logger.error("DataSource is not initialized");
+            return false;
+        }
+
+        try (Connection connection = dataSource.getConnection();
+             Statement stmt = connection.createStatement()) {
+            boolean isValid = stmt.execute("SELECT 1 FROM dual");
+            logger.info("Native connection is valid: " + isValid);
+            return isValid;
+        } catch (SQLException e) {
+            logger.error("SQLException occurred while checking native connection: " + e.getMessage(), e);
+            return false;
+        }
     }
 }

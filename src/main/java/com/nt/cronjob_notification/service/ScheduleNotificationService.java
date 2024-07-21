@@ -5,17 +5,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.nt.cronjob_notification.entity.NotificationMsgEntity;
-import com.nt.cronjob_notification.entity.OrderTypeEntity;
 import com.nt.cronjob_notification.entity.SaMetricNotificationEntity;
 import com.nt.cronjob_notification.entity.view.trigger.TriggerOrderTypeCount;
 import com.nt.cronjob_notification.log.LogFlie;
-import com.nt.cronjob_notification.model.distribute.manage.metric.MetricsResp;
-import com.nt.cronjob_notification.model.distribute.manage.metric.SaMetricNotificationData;
-import com.nt.cronjob_notification.model.distribute.notification.AddNotification;
-import com.nt.cronjob_notification.model.distribute.trigger.OrderTypeTriggerData;
 import com.nt.cronjob_notification.util.Condition;
-import com.nt.cronjob_notification.util.Convert;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -164,17 +157,79 @@ public class ScheduleNotificationService {
         }
     }
 
-    public void test(){
-        // List<SaMetricNotificationData> lists =ListAllMetrics();
-        // SaMetricNotificationData tmp = lists.get(0);
-        // System.out.println(tmp.getEmail());
-        // System.out.println(tmp.getLineToken());
-        // System.out.println(tmp.getTriggerNotiJson());
-        // System.out.println(tmp.getUpdatedBy());
-        // System.out.println(tmp.getOmNotConnect());
-        // System.out.println(tmp.getTopupNotConnect());
-        // System.out.println(tmp.getDbOmNotConnect());
-        smtpService.SendNotification("test", "arxzerocloud@gmail.com");
+    public void test() throws SQLException{
+        List<SaMetricNotificationEntity> metrics = ListAllMetrics();
+        Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
+        Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
+        HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
+        
+        for (SaMetricNotificationEntity metric : metrics) {
+            if (metric.getTRIGGER_IS_ACTIVE().equals(0)){
+                continue;
+            }
+            if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
+                String alertAction = "OmNotConnect";
+                String alertMessage = "can not connect to rabbitmq";
+
+                // SendNotification(alertAction,alertMessage,metric);
+
+                LogFlie.logMessage(
+                "ScheduleNotificationService", 
+                String.format("metric/%s/connect",LogFlie.dateFolderName()),
+                String.format(
+                    "%s %s %s",
+                    df.format(new Date()),
+                    alertAction,
+                    alertMessage
+                )
+            );
+            }
+            if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
+                String alertAction = "DbOmNotConnect";
+                String alertMessage = "can not connect to om database";
+                
+                // SendNotification(alertAction,alertMessage,metric);
+                
+                LogFlie.logMessage(
+                "ScheduleNotificationService", 
+                String.format("metric/%s/connect",LogFlie.dateFolderName()),
+                String.format(
+                    "%s %s %s",
+                    df.format(new Date()),
+                    alertAction,
+                    alertMessage
+                )
+                );
+            }
+
+            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
+            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
+            // String errorMessage = "more than setting to metric";
+            if (!errorMessage.isEmpty()){
+                String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
+                lineNotifyService.SendNotification(alertAction, metric.getLINE_TOKEN());
+                
+                LogFlie.logMessage(
+                    "ScheduleNotificationService", 
+                    String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
+                    String.format(
+                        "%s %s %s",
+                        df.format(new Date()),
+                        alertAction,
+                        errorMessage
+                    )
+                    );
+            }
+            String msgalert = String.format("check metric\n1. isRabbitMQStatusOK:%s\n2.isOMDatabaseStatusOK:%s\n3.CheckNumberOfTriggerInOrderTypeDatabaseError:%s",isRabbitMQStatusOK, isOMDatabaseStatusOK ,  errorMessage);
+            lineNotifyService.SendNotification(msgalert, metric.getLINE_TOKEN());
+            NotificationMsgEntity notification = new NotificationMsgEntity();
+                notification.setAction("test action");
+                notification.setEmail(metric.getEmail());
+                notification.setMessage(msgalert);
+
+            distributeService.addNotificationMessage(notification);
+        }
+        // smtpService.SendNotification("test", "arxzerocloud@gmail.com");
     }
 
     public void CheckMetrics() throws SQLException, IOException{
