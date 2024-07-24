@@ -248,16 +248,16 @@ public class ScheduleNotificationService {
 
                 SendNotification(alertAction,alertMessage,metric);
 
-            //     LogFlie.logMessage(
-            //     "ScheduleNotificationService", 
-            //     String.format("metric/%s/connect",LogFlie.dateFolderName()),
-            //     String.format(
-            //         "%s %s %s",
-            //         df.format(new Date()),
-            //         alertAction,
-            //         alertMessage
-            //     )
-            // );
+                LogFlie.logMessage(
+                "ScheduleNotificationService", 
+                String.format("metric/%s/connect",LogFlie.dateFolderName()),
+                String.format(
+                    "%s %s %s",
+                    df.format(new Date()),
+                    alertAction,
+                    alertMessage
+                )
+            );
             }
             if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
                 String alertAction = "DbOmNotConnect";
@@ -265,16 +265,16 @@ public class ScheduleNotificationService {
                 
                 SendNotification(alertAction,alertMessage,metric);
                 
-                // LogFlie.logMessage(
-                // "ScheduleNotificationService", 
-                // String.format("metric/%s/connect",LogFlie.dateFolderName()),
-                // String.format(
-                //     "%s %s %s",
-                //     df.format(new Date()),
-                //     alertAction,
-                //     alertMessage
-                // )
-                // );
+                LogFlie.logMessage(
+                "ScheduleNotificationService", 
+                String.format("metric/%s/connect",LogFlie.dateFolderName()),
+                String.format(
+                    "%s %s %s",
+                    df.format(new Date()),
+                    alertAction,
+                    alertMessage
+                )
+                );
             }
 
             // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
@@ -284,16 +284,16 @@ public class ScheduleNotificationService {
                 String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
                 SendNotification(alertAction,errorMessage, metric);
                 
-                // LogFlie.logMessage(
-                //     "ScheduleNotificationService", 
-                //     String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
-                //     String.format(
-                //         "%s %s %s",
-                //         df.format(new Date()),
-                //         alertAction,
-                //         errorMessage
-                //     )
-                //     );
+                LogFlie.logMessage(
+                    "ScheduleNotificationService", 
+                    String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
+                    String.format(
+                        "%s %s %s",
+                        df.format(new Date()),
+                        alertAction,
+                        errorMessage
+                    )
+                    );
             }
         }
     }
