@@ -102,8 +102,8 @@ public class ScheduleNotificationService {
 
     private void SendNotification(String action, String messageNotification, SaMetricNotificationEntity metricConfig) {
         List<String> emailList = Arrays.asList(metricConfig.getEmail().split(","));
-        ExecutorService executorService = Executors.newFixedThreadPool(3); // Adjust the number of threads as needed
 
+        
         try {
             for (String email : emailList) {
                 NotificationMsgEntity notification = new NotificationMsgEntity();
@@ -112,48 +112,36 @@ public class ScheduleNotificationService {
                 notification.setMessage(messageNotification);
 
                 // Send email
-                executorService.submit(() -> {
-                    try {
-                        smtpService.SendNotification(messageNotification, email);
-                    } catch (Exception e) {
-                        notification.setAction("Fail");
-                        e.printStackTrace();
-                    }
-                });
-
-                // Send Line Notify
-                Integer isLineNotifyActive = metricConfig.getLINE_IS_ACTIVE();
-                if (isLineNotifyActive >= 1) {
-                    executorService.submit(() -> {
-                        try {
-                            lineNotifyService.SendNotification(messageNotification, metricConfig.getLINE_TOKEN());
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
+                try {
+                    smtpService.SendNotification(messageNotification, email);
+                } catch (Exception e) {
+                    notification.setAction("Fail");
+                    e.printStackTrace();
                 }
+
+                
 
                 // Save notification message
-                executorService.submit(() -> {
-                    try {
-                        distributeService.addNotificationMessage(notification);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-            }
-        } finally {
-            executorService.shutdown();
-            try {
-                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-                    executorService.shutdownNow();
-                    if (!executorService.awaitTermination(60, TimeUnit.SECONDS))
-                        System.err.println("ExecutorService did not terminate");
+                try {
+                    distributeService.addNotificationMessage(notification);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (InterruptedException ie) {
-                executorService.shutdownNow();
-                Thread.currentThread().interrupt();
             }
+
+            // Send Line Notify
+            Integer isLineNotifyActive = metricConfig.getLINE_IS_ACTIVE();
+            if (isLineNotifyActive >= 1) {
+                try {
+                    lineNotifyService.SendNotification(messageNotification, metricConfig.getLINE_TOKEN());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
