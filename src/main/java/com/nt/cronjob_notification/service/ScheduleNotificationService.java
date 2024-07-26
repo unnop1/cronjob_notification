@@ -83,7 +83,7 @@ public class ScheduleNotificationService {
                 Integer value = mapOrderTypeTriggerSend.get(OrderTypeNameConfig);
                 if (value != null && triggerCountConfig != null) {
                     System.out.println("Value for key '" + OrderTypeNameConfig + "': " + value);
-                    if (Condition.doNumberOperation(operatorConfig, triggerCountConfig, value)){
+                    if (Condition.doNumberOperation(operatorConfig, value, triggerCountConfig )){
                         String alertMessage = "OrderType: " + OrderTypeNameConfig + " , total :" + value + "  "+ operatorConfig +" metric value :" + triggerCountConfig;
                         metricMessages.add(alertMessage);
                     }
