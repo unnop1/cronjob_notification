@@ -7,12 +7,13 @@ import jakarta.mail.internet.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.nt.cronjob_notification.util.ServerJboss;
+
 @Service
 public class SMTPService {
     @Value("${smtp.host}")
     private String host = "red.nt.alarm@gmail.com";
-    
-    
+
     @Value("${smtp.username}")
     private String username = "red.nt.alarm@gmail.com";
 

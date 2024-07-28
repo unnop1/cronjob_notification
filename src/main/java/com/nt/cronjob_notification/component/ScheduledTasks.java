@@ -16,7 +16,7 @@ public class ScheduledTasks {
     @Autowired
     private ScheduleNotificationService scheduleNotificationService;
 
-    @Scheduled(cron = "0 */30 * * * *") // Cron expression for running every minute
+    @Scheduled(cron = "0 */20 * * * *") // Cron expression for running every minute
     public void execute() throws SQLException, IOException {
         // scheduleNotificationService.CheckMetrics();
         scheduleNotificationService.CheckMetrics();

@@ -1,5 +1,6 @@
 package com.nt.cronjob_notification.service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -9,6 +10,8 @@ import com.nt.cronjob_notification.entity.SaMetricNotificationEntity;
 import com.nt.cronjob_notification.entity.view.trigger.TriggerOrderTypeCount;
 import com.nt.cronjob_notification.log.LogFlie;
 import com.nt.cronjob_notification.util.Condition;
+import com.nt.cronjob_notification.util.ServerJboss;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -23,6 +26,9 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class ScheduleNotificationService {
+
+    @Value("${notification.whitelist.ip}")
+    private String wlip;
 
     @Autowired
     private  RabbitMqService rabbitMqService;
@@ -103,6 +109,12 @@ public class ScheduleNotificationService {
     private void SendNotification(String action, String messageNotification, SaMetricNotificationEntity metricConfig) {
         List<String> emailList = Arrays.asList(metricConfig.getEmail().split(","));
 
+        String currentJbossIp = ServerJboss.getServerIP();
+        if (currentJbossIp!=null) {
+            if(!currentJbossIp.equals(wlip)){
+                return;
+            }
+        }
         
         try {
             for (String email : emailList) {
