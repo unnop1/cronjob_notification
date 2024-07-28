@@ -232,7 +232,7 @@ public class ScheduleNotificationService {
         // smtpService.SendNotification("test", "arxzerocloud@gmail.com");
     }
 
-    public void CheckMetrics() throws SQLException, IOException{
+    public void CheckMetrics(HashMap<String, Integer> cacheNotification) throws SQLException, IOException{
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
         Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
         Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
@@ -242,6 +242,20 @@ public class ScheduleNotificationService {
             if (metric.getTRIGGER_IS_ACTIVE().equals(0)){
                 continue;
             }
+
+            // check cache for notification
+            String metricId = String.valueOf(metric.getID()); 
+            Integer maxCheckMetric = 3;
+            Integer cacheCount = cacheNotification.get(metricId);
+            if(cacheCount != null){
+                if(cacheCount >= maxCheckMetric){
+                    return;
+                }
+            }else{
+                cacheCount = 0;
+                cacheNotification.put(metricId, cacheCount);
+            }
+
             if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
                 String alertAction = "OmNotConnect";
                 String alertMessage = "can not connect to rabbitmq";
@@ -295,6 +309,9 @@ public class ScheduleNotificationService {
                     )
                     );
             }
+
+            // save cache for notification
+            cacheNotification.put(metricId, cacheCount+1);
         }
     }
     
