@@ -110,6 +110,7 @@ public class ScheduleNotificationService {
         List<String> emailList = Arrays.asList(metricConfig.getEmail().split(","));
 
         String currentJbossIp = ServerJboss.getServerIP();
+        lineNotifyService.SendNotification("ip send: "+currentJbossIp, metricConfig.getLINE_TOKEN());
         if (currentJbossIp!=null) {
             if(!currentJbossIp.equals(wlip)){
                 return;
