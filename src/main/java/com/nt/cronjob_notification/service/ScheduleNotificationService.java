@@ -107,7 +107,7 @@ public class ScheduleNotificationService {
         List<String> emailList = Arrays.asList(metricConfig.getEmail().split(","));
 
         String currentJbossIp = ServerJboss.getServerIP();
-        lineNotifyService.SendNotification("ip send: "+currentJbossIp, metricConfig.getLINE_TOKEN());
+        // lineNotifyService.SendNotification("ip send: "+wlip, metricConfig.getLINE_TOKEN());
         if (currentJbossIp!=null) {
             if(!currentJbossIp.equals(wlip)){
                 return;
@@ -245,6 +245,7 @@ public class ScheduleNotificationService {
             String metricId = String.valueOf(metric.getID()); 
             Integer maxCheckMetric = 3;
             Integer cacheCount = cacheNotification.get(metricId);
+            // String currentJbossIp = ServerJboss.getServerIP();
             if(cacheCount != null){
                 if(cacheCount >= maxCheckMetric){
                     return;
@@ -310,6 +311,7 @@ public class ScheduleNotificationService {
 
             // save cache for notification
             cacheNotification.put(metricId, cacheCount+1);
+            // lineNotifyService.SendNotification("ip send: "+currentJbossIp + ", cache count :"+cacheCount + " , metric id:"+metricId, metric.getLINE_TOKEN());
         }
     }
     
