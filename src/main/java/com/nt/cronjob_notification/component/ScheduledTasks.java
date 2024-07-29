@@ -14,7 +14,7 @@ import com.nt.cronjob_notification.service.ScheduleNotificationService;
 @Component
 public class ScheduledTasks {
 
-    private HashMap<String,Integer> cacheNotification;
+    private HashMap<String,Integer> cacheNotification = new HashMap<String,Integer>();
 
     @Autowired
     private ScheduleNotificationService scheduleNotificationService;
