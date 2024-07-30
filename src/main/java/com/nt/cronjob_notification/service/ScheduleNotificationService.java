@@ -69,11 +69,10 @@ public class ScheduleNotificationService {
         return mapOrderTypeTrgHashMap;
     }
 
-    private String CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON, HashMap<String, Integer> mapOrderTypeTriggerSend) {
-        String notificationMessage = "";
+    private List<String> CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON, HashMap<String, Integer> mapOrderTypeTriggerSend) {
         List<String> metricMessages = new ArrayList<String>();
         if (triggerNotificationJSON== null){
-            return notificationMessage;
+            return metricMessages;
         }
         try{
             JSONArray triggerConditions = new JSONArray(triggerNotificationJSON);
@@ -92,18 +91,15 @@ public class ScheduleNotificationService {
                     }
                 }
             }
-            if(metricMessages.size() > 0){
-                notificationMessage = String.join(" , ", metricMessages);
-            }
-            System.out.println("notificationMessage:"+notificationMessage);
+            // System.out.println("notificationMessage:"+notificationMessage);
         }catch(Exception e){
-            return notificationMessage+ " "+e.getMessage();
+            metricMessages.add(e.getMessage());
         }
-        return notificationMessage;
+        return metricMessages;
         
     }
 
-    private void SendNotification(String action, String messageNotification, SaMetricNotificationEntity metricConfig) {
+    public void SendNotification(String action, String messageNotification, SaMetricNotificationEntity metricConfig) {
         List<String> emailList = Arrays.asList(metricConfig.getEmail().split(","));
 
         String currentJbossIp = ServerJboss.getServerIP();
@@ -155,85 +151,8 @@ public class ScheduleNotificationService {
         }
     }
 
-    public void test() throws SQLException{
+    public void CheckTriggerMessageMetrics(HashMap<String, Integer> cacheTriggerCountNotification, HashMap<String,SaMetricNotificationEntity> cacheTriggerStack) throws SQLException, IOException{
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
-        Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
-        Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
-        HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
-        
-        for (SaMetricNotificationEntity metric : metrics) {
-            if (metric.getTRIGGER_IS_ACTIVE().equals(0)){
-                continue;
-            }
-            if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
-                String alertAction = "OmNotConnect";
-                String alertMessage = "can not connect to rabbitmq";
-
-                // SendNotification(alertAction,alertMessage,metric);
-
-                LogFlie.logMessage(
-                "ScheduleNotificationService", 
-                String.format("metric/%s/connect",LogFlie.dateFolderName()),
-                String.format(
-                    "%s %s %s",
-                    df.format(new Date()),
-                    alertAction,
-                    alertMessage
-                )
-            );
-            }
-            if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
-                String alertAction = "DbOmNotConnect";
-                String alertMessage = "can not connect to om database";
-                
-                // SendNotification(alertAction,alertMessage,metric);
-                
-                LogFlie.logMessage(
-                "ScheduleNotificationService", 
-                String.format("metric/%s/connect",LogFlie.dateFolderName()),
-                String.format(
-                    "%s %s %s",
-                    df.format(new Date()),
-                    alertAction,
-                    alertMessage
-                )
-                );
-            }
-
-            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
-            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
-            // String errorMessage = "more than setting to metric";
-            if (!errorMessage.isEmpty()){
-                String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
-                lineNotifyService.SendNotification(alertAction, metric.getLINE_TOKEN());
-                
-                LogFlie.logMessage(
-                    "ScheduleNotificationService", 
-                    String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
-                    String.format(
-                        "%s %s %s",
-                        df.format(new Date()),
-                        alertAction,
-                        errorMessage
-                    )
-                    );
-            }
-            String msgalert = String.format("check metric\n1. isRabbitMQStatusOK:%s\n2.isOMDatabaseStatusOK:%s\n3.CheckNumberOfTriggerInOrderTypeDatabaseError:%s",isRabbitMQStatusOK, isOMDatabaseStatusOK ,  errorMessage);
-            lineNotifyService.SendNotification(msgalert, metric.getLINE_TOKEN());
-            NotificationMsgEntity notification = new NotificationMsgEntity();
-                notification.setAction("test action");
-                notification.setEmail(metric.getEmail());
-                notification.setMessage(msgalert);
-
-            distributeService.addNotificationMessage(notification);
-        }
-        // smtpService.SendNotification("test", "arxzerocloud@gmail.com");
-    }
-
-    public void CheckMetrics(HashMap<String, Integer> cacheNotification) throws SQLException, IOException{
-        List<SaMetricNotificationEntity> metrics = ListAllMetrics();
-        Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
-        Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
         HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
         
         for (SaMetricNotificationEntity metric : metrics) {
@@ -244,7 +163,7 @@ public class ScheduleNotificationService {
             // check cache for notification
             String metricId = String.valueOf(metric.getID()); 
             Integer maxCheckMetric = 3;
-            Integer cacheCount = cacheNotification.get(metricId);
+            Integer cacheCount = cacheTriggerCountNotification.get(metricId);
             // String currentJbossIp = ServerJboss.getServerIP();
             if(cacheCount != null){
                 if(cacheCount >= maxCheckMetric){
@@ -252,66 +171,138 @@ public class ScheduleNotificationService {
                 }
             }else{
                 cacheCount = 0;
-                cacheNotification.put(metricId, cacheCount);
+                cacheTriggerCountNotification.put(metricId, cacheCount);
+            }
+
+            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
+            List<String> errorMessages = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
+            // String errorMessage = "more than setting to metric";
+            String keyPattern = String.join(",",errorMessages);
+            if(cacheCount < 1){ 
+                if (errorMessages.size() > 0) {
+                    for (String errorMessage : errorMessages) {
+                        String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
+
+                        SendNotification(alertAction, errorMessage, metric);
+                        
+                        LogFlie.logMessage(
+                            "ScheduleNotificationService", 
+                            String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
+                            String.format(
+                                "%s %s %s",
+                                df.format(new Date()),
+                                alertAction,
+                                errorMessage
+                            )
+                        );
+
+                    }
+                }
+            }else{
+                cacheTriggerStack.put(keyPattern, metric);
+            }
+
+            // save cache for notification
+            cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
+        }
+    }
+
+    public void CheckDatabaseOMMetrics(HashMap<String, Integer> cacheOnlyMsgCountNotification, HashMap<String,SaMetricNotificationEntity> cacheOnlyMsgStack) throws SQLException, IOException{
+        List<SaMetricNotificationEntity> metrics = ListAllMetrics();
+        Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();
+        
+        for (SaMetricNotificationEntity metric : metrics) {
+            if (metric.getTRIGGER_IS_ACTIVE().equals(0)){
+                continue;
+            }
+
+            // check cache for notification
+            String metricId = String.valueOf(metric.getID()); 
+            Integer maxCheckMetric = 3;
+            Integer cacheCount = cacheOnlyMsgCountNotification.get(metricId);
+            // String currentJbossIp = ServerJboss.getServerIP();
+            if(cacheCount != null){
+                if(cacheCount >= maxCheckMetric){
+                    return;
+                }
+            }else{
+                cacheCount = 0;
+                cacheOnlyMsgCountNotification.put(metricId, cacheCount);
+            }
+
+            if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
+                String alertAction = "DbOmNotConnect";
+                String alertMessage = "can not connect to om database";
+                
+                if(cacheCount < 1){ 
+                    SendNotification(alertAction,alertMessage,metric);
+                    
+                    LogFlie.logMessage(
+                    "ScheduleNotificationService", 
+                    String.format("metric/%s/connect",LogFlie.dateFolderName()),
+                    String.format(
+                        "%s %s %s",
+                        df.format(new Date()),
+                        alertAction,
+                        alertMessage
+                    )
+                    );
+                }else{
+                    cacheOnlyMsgStack.put(alertMessage, metric);
+                }
+
+                cacheOnlyMsgCountNotification.put(alertMessage, cacheCount+1);
+            }
+        }
+    }
+
+    public void CheckRabbitMQMetrics(HashMap<String, Integer> cacheOnlyMsgCountNotification, HashMap<String,SaMetricNotificationEntity> cacheOnlyMsgStack) throws SQLException, IOException{
+        List<SaMetricNotificationEntity> metrics = ListAllMetrics();
+        Boolean isRabbitMQStatusOK = CheckConnectOMAndTopUpRabbitMQ();
+        
+        for (SaMetricNotificationEntity metric : metrics) {
+            if (metric.getTRIGGER_IS_ACTIVE().equals(0)){
+                continue;
+            }
+
+            // check cache for notification
+            String metricId = String.valueOf(metric.getID()); 
+            Integer maxCheckMetric = 3;
+            Integer cacheCount = cacheOnlyMsgCountNotification.get(metricId);
+            // String currentJbossIp = ServerJboss.getServerIP();
+            if(cacheCount != null){
+                if(cacheCount >= maxCheckMetric){
+                    return;
+                }
+            }else{
+                cacheCount = 0;
+                cacheOnlyMsgCountNotification.put(metricId, cacheCount);
             }
 
             if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
                 String alertAction = "OmNotConnect";
                 String alertMessage = "can not connect to rabbitmq";
 
-                SendNotification(alertAction,alertMessage,metric);
-
-                LogFlie.logMessage(
-                "ScheduleNotificationService", 
-                String.format("metric/%s/connect",LogFlie.dateFolderName()),
-                String.format(
-                    "%s %s %s",
-                    df.format(new Date()),
-                    alertAction,
-                    alertMessage
-                )
-            );
-            }
-            if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
-                String alertAction = "DbOmNotConnect";
-                String alertMessage = "can not connect to om database";
+                if(cacheCount < 1){                
+                    SendNotification(alertAction,alertMessage,metric);
                 
-                SendNotification(alertAction,alertMessage,metric);
-                
-                LogFlie.logMessage(
-                "ScheduleNotificationService", 
-                String.format("metric/%s/connect",LogFlie.dateFolderName()),
-                String.format(
-                    "%s %s %s",
-                    df.format(new Date()),
-                    alertAction,
-                    alertMessage
-                )
-                );
-            }
-
-            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
-            String errorMessage = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
-            // String errorMessage = "more than setting to metric";
-            if (!errorMessage.isEmpty()){
-                String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
-                SendNotification(alertAction,errorMessage, metric);
-                
-                LogFlie.logMessage(
+                    LogFlie.logMessage(
                     "ScheduleNotificationService", 
-                    String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
+                    String.format("metric/%s/connect",LogFlie.dateFolderName()),
                     String.format(
                         "%s %s %s",
                         df.format(new Date()),
                         alertAction,
-                        errorMessage
+                        alertMessage
                     )
                     );
+                }else{
+                    cacheOnlyMsgStack.put(alertMessage, metric);
+                }
+
+                cacheOnlyMsgCountNotification.put(alertMessage, cacheCount+1);
             }
 
-            // save cache for notification
-            cacheNotification.put(metricId, cacheCount+1);
-            // lineNotifyService.SendNotification("ip send: "+currentJbossIp + ", cache count :"+cacheCount + " , metric id:"+metricId, metric.getLINE_TOKEN());
         }
     }
     
