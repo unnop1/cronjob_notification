@@ -160,10 +160,14 @@ public class ScheduleNotificationService {
                 continue;
             }
 
+            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
+            List<String> errorMessages = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
+            // String errorMessage = "more than setting to metric";
+            String keyPattern = String.join(",",errorMessages);
+
             // check cache for notification
-            String metricId = String.valueOf(metric.getID()); 
             Integer maxCheckMetric = 3;
-            Integer cacheCount = cacheTriggerCountNotification.get(metricId);
+            Integer cacheCount = cacheTriggerCountNotification.get(keyPattern);
             // String currentJbossIp = ServerJboss.getServerIP();
             if(cacheCount != null){
                 if(cacheCount >= maxCheckMetric){
@@ -171,13 +175,8 @@ public class ScheduleNotificationService {
                 }
             }else{
                 cacheCount = 0;
-                cacheTriggerCountNotification.put(metricId, cacheCount);
             }
 
-            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
-            List<String> errorMessages = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
-            // String errorMessage = "more than setting to metric";
-            String keyPattern = String.join(",",errorMessages);
             if(cacheCount < 1){ 
                 if (errorMessages.size() > 0) {
                     for (String errorMessage : errorMessages) {
