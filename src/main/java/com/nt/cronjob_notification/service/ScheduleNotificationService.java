@@ -206,6 +206,61 @@ public class ScheduleNotificationService {
         }
     }
 
+    public void CheckTriggerMessage20MMetrics(HashMap<String, Integer> cacheTriggerCountNotification, HashMap<String,SaMetricNotificationEntity> cacheTriggerStack) throws SQLException, IOException{
+        List<SaMetricNotificationEntity> metrics = ListAllMetrics();
+        HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
+        
+        for (SaMetricNotificationEntity metric : metrics) {
+            if (metric.getTRIGGER_IS_ACTIVE().equals(0)){
+                continue;
+            }
+
+            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
+            List<String> errorMessages = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
+            // String errorMessage = "more than setting to metric";
+            String keyPattern = String.join(",",errorMessages);
+
+            // check cache for notification
+            Integer maxCheckMetric = 3;
+            Integer cacheCount = cacheTriggerCountNotification.get(keyPattern);
+            // String currentJbossIp = ServerJboss.getServerIP();
+            if(cacheCount != null){
+                if(cacheCount >= maxCheckMetric){
+                    return;
+                }
+            }else{
+                cacheCount = 0;
+            }
+
+            if(cacheCount <2){ 
+                if (errorMessages.size() > 0) {
+                    for (String errorMessage : errorMessages) {
+                        String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
+
+                        SendNotification(alertAction, errorMessage, metric);
+                        
+                        LogFlie.logMessage(
+                            "ScheduleNotificationService", 
+                            String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
+                            String.format(
+                                "%s %s %s",
+                                df.format(new Date()),
+                                alertAction,
+                                errorMessage
+                            )
+                        );
+
+                    }
+                }
+            }else{
+                cacheTriggerStack.put(keyPattern, metric);
+            }
+
+            // save cache for notification
+            cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
+        }
+    }
+
     public void CheckDatabaseOMMetrics(HashMap<String, Integer> cacheOnlyMsgCountNotification, HashMap<String,SaMetricNotificationEntity> cacheOnlyMsgStack) throws SQLException, IOException{
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
         Boolean isOMDatabaseStatusOK = CheckConnectOMDatabase();

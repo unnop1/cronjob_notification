@@ -45,9 +45,15 @@ public class ScheduledTasks {
     }
 
     // Check alert metric trigger message
-    @Scheduled(cron = "0 */20 * * * *") // Cron expression for running every minute 0 */20 * * * *
-    public void executeTriggerMessage() throws SQLException, IOException {
+    @Scheduled(cron = "0 */5 * * * *") // Cron expression for running every minute 0 */20 * * * *
+    public void executeTrigger5MMessage() throws SQLException, IOException {
         scheduleNotificationService.CheckTriggerMessageMetrics(cacheTriggerCountNotification, stackTriggerMessageSendNotification);
+    }
+
+    // Check alert metric trigger message
+    @Scheduled(cron = "0 */20 * * * *") // Cron expression for running every minute 0 */20 * * * *
+    public void executeTrigger20MMessage() throws SQLException, IOException {
+        scheduleNotificationService.CheckTriggerMessage20MMetrics(cacheTriggerCountNotification, stackTriggerMessageSendNotification);
     }
 
     // send notification metric only message
