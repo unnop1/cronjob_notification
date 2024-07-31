@@ -69,8 +69,9 @@ public class ScheduleNotificationService {
         return mapOrderTypeTrgHashMap;
     }
 
-    private List<String> CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON, HashMap<String, Integer> mapOrderTypeTriggerSend) {
-        List<String> metricMessages = new ArrayList<String>();
+    private HashMap<String, String> CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON, HashMap<String, Integer> mapOrderTypeTriggerSend) {
+        HashMap<String, String> metricMessages = new HashMap<String, String>();
+
         if (triggerNotificationJSON== null){
             return metricMessages;
         }
@@ -78,22 +79,23 @@ public class ScheduleNotificationService {
             JSONArray triggerConditions = new JSONArray(triggerNotificationJSON);
 
             for (int i = 0; i < triggerConditions.length(); i++) {
+                HashMap<String, String> mapMetricAlert = new HashMap<String, String>();
                 JSONObject triggerCondition = triggerConditions.getJSONObject(i);
                 Integer triggerCountConfig = triggerCondition.getInt("value");
                 String operatorConfig = triggerCondition.getString("operator");
-                String OrderTypeNameConfig = triggerCondition.getString("order_type").toUpperCase();
+                String OrderTypeNameConfig = triggerCondition.getString("order_type").toUpperCase(); 
                 Integer value = mapOrderTypeTriggerSend.get(OrderTypeNameConfig);
                 if (value != null && triggerCountConfig != null) {
                     System.out.println("Value for key '" + OrderTypeNameConfig + "': " + value);
                     if (Condition.doNumberOperation(operatorConfig, value, triggerCountConfig )){
+                        String keyPattern = OrderTypeNameConfig + "_" + operatorConfig + "_" + value;
                         String alertMessage = "OrderType: " + OrderTypeNameConfig + " , total :" + value + "  "+ operatorConfig +" metric value :" + triggerCountConfig;
-                        metricMessages.add(alertMessage);
+                        mapMetricAlert.put(keyPattern, alertMessage);
                     }
                 }
             }
-            // System.out.println("notificationMessage:"+notificationMessage);
+
         }catch(Exception e){
-            metricMessages.add(e.getMessage());
         }
         return metricMessages;
         
@@ -160,29 +162,29 @@ public class ScheduleNotificationService {
                 continue;
             }
 
-            // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
-            List<String> errorMessages = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
+            HashMap<String, String> errorMessages = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
             // String errorMessage = "more than setting to metric";
-            String keyPattern = String.join(",",errorMessages);
 
-            // check cache for notification
-            Integer maxCheckMetric = 3;
-            Integer cacheCount = cacheTriggerCountNotification.get(keyPattern);
-            // String currentJbossIp = ServerJboss.getServerIP();
-            if(cacheCount != null){
-                if(cacheCount >= maxCheckMetric){
-                    return;
-                }
-            }else{
-                cacheCount = 0;
-            }
+            // if(cacheCount < 1){ 
+            if (errorMessages.size() > 0) {
+                for (String pattern : errorMessages.keySet()) {
+                    String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
 
-            if(cacheCount < 1){ 
-                if (errorMessages.size() > 0) {
-                    for (String errorMessage : errorMessages) {
-                        String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
+                    // check cache for notification
+                    Integer maxCheckMetric = 3;
+                    Integer cacheCount = cacheTriggerCountNotification.get(pattern);
+                    // String currentJbossIp = ServerJboss.getServerIP();
+                    if(cacheCount != null){
+                        if(cacheCount >= maxCheckMetric){
+                            return;
+                        }
+                    }else{
+                        cacheCount = 0;
+                    }
 
-                        SendNotification(alertAction, errorMessage, metric);
+                    if(cacheCount < 1){ 
+
+                        SendNotification(alertAction, errorMessages.get(pattern), metric);
                         
                         LogFlie.logMessage(
                             "ScheduleNotificationService", 
@@ -191,18 +193,18 @@ public class ScheduleNotificationService {
                                 "%s %s %s",
                                 df.format(new Date()),
                                 alertAction,
-                                errorMessage
+                                errorMessages.get(pattern)
                             )
                         );
-
+                    }else{
+                        cacheTriggerStack.put(pattern, metric);
                     }
-                }
-            }else{
-                cacheTriggerStack.put(keyPattern, metric);
-            }
 
-            // save cache for notification
-            cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
+                    cacheTriggerCountNotification.put(pattern, cacheCount+1);
+
+                }
+            }
+           
         }
     }
 
