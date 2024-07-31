@@ -45,7 +45,7 @@ public class ScheduledTasks {
     }
 
     // Check alert metric trigger message
-    @Scheduled(cron = "0 */5 * * * *") // Cron expression for running every minute 0 */20 * * * *
+    @Scheduled(cron = "0 */1 * * * *") // Cron expression for running every minute 0 */20 * * * *
     public void executeTriggerMessage() throws SQLException, IOException {
         scheduleNotificationService.CheckTriggerMessageMetrics(cacheTriggerCountNotification, stackTriggerMessageSendNotification);
     }
@@ -69,12 +69,10 @@ public class ScheduledTasks {
     }
 
     // send notification metric only message
-    @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
+    @Scheduled(cron = "0 */2 0 * * *") // Cron expression for running every minute
     public void sendAlertTriggerNotification() throws SQLException, IOException {
-        for (String messages : stackTriggerMessageSendNotification.keySet()) {
-            for (String message : messages.split(",")) {
-                scheduleNotificationService.SendNotification("CheckNumberOfTriggerInOrderTypeDatabase", message, stackTriggerMessageSendNotification.get(message));
-            }
+        for (String message : stackTriggerMessageSendNotification.keySet()) {
+            scheduleNotificationService.SendNotification("CheckNumberOfTriggerInOrderTypeDatabase", message, stackTriggerMessageSendNotification.get(message));
         }
         stackTriggerMessageSendNotification = new HashMap<String,SaMetricNotificationEntity>();
     }

@@ -173,6 +173,7 @@ public class ScheduleNotificationService {
                     // check cache for notification
                     Integer maxCheckMetric = 3;
                     Integer cacheCount = cacheTriggerCountNotification.get(pattern);
+                    String messageAlert = errorMessages.get(pattern);
                     // String currentJbossIp = ServerJboss.getServerIP();
                     if(cacheCount != null){
                         if(cacheCount >= maxCheckMetric){
@@ -184,7 +185,7 @@ public class ScheduleNotificationService {
 
                     if(cacheCount < 1){ 
 
-                        SendNotification(alertAction, errorMessages.get(pattern), metric);
+                        SendNotification(alertAction, messageAlert, metric);
                         
                         LogFlie.logMessage(
                             "ScheduleNotificationService", 
@@ -193,16 +194,17 @@ public class ScheduleNotificationService {
                                 "%s %s %s",
                                 df.format(new Date()),
                                 alertAction,
-                                errorMessages.get(pattern)
+                                messageAlert
                             )
                         );
                     }else{
-                        cacheTriggerStack.put(pattern, metric);
+                        cacheTriggerStack.put(messageAlert, metric);
                     }
 
                     cacheTriggerCountNotification.put(pattern, cacheCount+1);
 
                 }
+                
             }
            
         }
