@@ -151,7 +151,7 @@ public class ScheduleNotificationService {
         }
     }
 
-    public void CheckTriggerMessageMetrics(HashMap<String, Integer> cacheTriggerCountNotification, HashMap<String,SaMetricNotificationEntity> cacheTriggerStack) throws SQLException, IOException{
+    public void CheckTriggerMessage5MMetrics(HashMap<String, Integer> cacheTriggerCountNotification) throws SQLException, IOException{
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
         HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
         
@@ -197,8 +197,6 @@ public class ScheduleNotificationService {
 
                     }
                 }
-            }else{
-                cacheTriggerStack.put(keyPattern, metric);
             }
 
             // save cache for notification
@@ -337,7 +335,7 @@ public class ScheduleNotificationService {
                 String alertAction = "OmNotConnect";
                 String alertMessage = "can not connect to rabbitmq";
 
-                if(cacheCount < 1){                
+                if(cacheCount < maxCheckMetric){                
                     SendNotification(alertAction,alertMessage,metric);
                 
                     LogFlie.logMessage(
@@ -350,8 +348,6 @@ public class ScheduleNotificationService {
                         alertMessage
                     )
                     );
-                }else{
-                    cacheOnlyMsgStack.put(alertMessage, metric);
                 }
 
                 cacheOnlyMsgCountNotification.put(alertMessage, cacheCount+1);

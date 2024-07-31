@@ -47,7 +47,7 @@ public class ScheduledTasks {
     // Check alert metric trigger message
     @Scheduled(cron = "0 */5 * * * *") // Cron expression for running every minute 0 */20 * * * *
     public void executeTrigger5MMessage() throws SQLException, IOException {
-        scheduleNotificationService.CheckTriggerMessageMetrics(cacheTriggerCountNotification, stackTriggerMessageSendNotification);
+        scheduleNotificationService.CheckTriggerMessage5MMetrics(cacheTriggerCountNotification);
     }
 
     // Check alert metric trigger message
@@ -56,34 +56,34 @@ public class ScheduledTasks {
         scheduleNotificationService.CheckTriggerMessage20MMetrics(cacheTriggerCountNotification, stackTriggerMessageSendNotification);
     }
 
-    // send notification metric only message
-    @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
-    public void sendAlertDatabaseOMNotification() throws SQLException, IOException {
-        for (String message : stackDBOMSendNotification.keySet()) {
-            scheduleNotificationService.SendNotification("DbOmNotConnect", message, stackDBOMSendNotification.get(message));
-        }
-        stackDBOMSendNotification = new HashMap<String,SaMetricNotificationEntity>();
-    }
+    // // send notification metric only message
+    // @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
+    // public void sendAlertDatabaseOMNotification() throws SQLException, IOException {
+    //     for (String message : stackDBOMSendNotification.keySet()) {
+    //         scheduleNotificationService.SendNotification("DbOmNotConnect", message, stackDBOMSendNotification.get(message));
+    //     }
+    //     stackDBOMSendNotification = new HashMap<String,SaMetricNotificationEntity>();
+    // }
 
-    // send notification metric only message
-    @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
-    public void sendAlertRabbitMQNotification() throws SQLException, IOException {
-        for (String message : stackOMSendNotification.keySet()) {
-            scheduleNotificationService.SendNotification("OmNotConnect", message, stackOMSendNotification.get(message));
-        }
-        stackOMSendNotification = new HashMap<String,SaMetricNotificationEntity>();
-    }
+    // // send notification metric only message
+    // @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
+    // public void sendAlertRabbitMQNotification() throws SQLException, IOException {
+    //     for (String message : stackOMSendNotification.keySet()) {
+    //         scheduleNotificationService.SendNotification("OmNotConnect", message, stackOMSendNotification.get(message));
+    //     }
+    //     stackOMSendNotification = new HashMap<String,SaMetricNotificationEntity>();
+    // }
 
-    // send notification metric only message
-    @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
-    public void sendAlertTriggerNotification() throws SQLException, IOException {
-        for (String messages : stackTriggerMessageSendNotification.keySet()) {
-            for (String message : messages.split(",")) {
-                scheduleNotificationService.SendNotification("CheckNumberOfTriggerInOrderTypeDatabase", message, stackTriggerMessageSendNotification.get(message));
-            }
-        }
-        stackTriggerMessageSendNotification = new HashMap<String,SaMetricNotificationEntity>();
-    }
+    // // send notification metric only message
+    // @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
+    // public void sendAlertTriggerNotification() throws SQLException, IOException {
+    //     for (String messages : stackTriggerMessageSendNotification.keySet()) {
+    //         for (String message : messages.split(",")) {
+    //             scheduleNotificationService.SendNotification("CheckNumberOfTriggerInOrderTypeDatabase", message, stackTriggerMessageSendNotification.get(message));
+    //         }
+    //     }
+    //     stackTriggerMessageSendNotification = new HashMap<String,SaMetricNotificationEntity>();
+    // }
 
     // clear cache notification metric
     @Scheduled(cron = "0 0 0 * * *") // Cron expression for running every minute
