@@ -151,7 +151,7 @@ public class ScheduleNotificationService {
         }
     }
 
-    public void CheckTriggerMessage5MMetrics(HashMap<String, Integer> cacheTriggerCountNotification) throws SQLException, IOException{
+    public HashMap<String, Integer> CheckTriggerMessage5MMetrics(HashMap<String, Integer> cacheTriggerCountNotification) throws SQLException, IOException{
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
         HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
         
@@ -171,7 +171,7 @@ public class ScheduleNotificationService {
             // String currentJbossIp = ServerJboss.getServerIP();
             if(cacheCount != null){
                 if(cacheCount >= maxCheckMetric){
-                    return;
+                    return cacheTriggerCountNotification;
                 }
             }else{
                 cacheCount = 0;
@@ -202,9 +202,10 @@ public class ScheduleNotificationService {
             // save cache for notification
             cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
         }
+        return cacheTriggerCountNotification;
     }
 
-    public void CheckTriggerMessage20MMetrics(HashMap<String, Integer> cacheTriggerCountNotification, HashMap<String,SaMetricNotificationEntity> cacheTriggerStack) throws SQLException, IOException{
+    public HashMap<String, Integer> CheckTriggerMessage20MMetrics(HashMap<String, Integer> cacheTriggerCountNotification) throws SQLException, IOException{
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
         HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
         
@@ -224,13 +225,13 @@ public class ScheduleNotificationService {
             // String currentJbossIp = ServerJboss.getServerIP();
             if(cacheCount != null){
                 if(cacheCount >= maxCheckMetric){
-                    return;
+                    return cacheTriggerCountNotification;
                 }
             }else{
                 cacheCount = 0;
             }
 
-            if(cacheCount <2){ 
+            if(cacheCount <= maxCheckMetric){ 
                 if (errorMessages.size() > 0) {
                     for (String errorMessage : errorMessages) {
                         String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
@@ -250,13 +251,12 @@ public class ScheduleNotificationService {
 
                     }
                 }
-            }else{
-                cacheTriggerStack.put(keyPattern, metric);
             }
 
             // save cache for notification
             cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
         }
+        return cacheTriggerCountNotification;
     }
 
     public void CheckDatabaseOMMetrics(HashMap<String, Integer> cacheOnlyMsgCountNotification, HashMap<String,SaMetricNotificationEntity> cacheOnlyMsgStack) throws SQLException, IOException{
