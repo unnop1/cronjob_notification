@@ -166,7 +166,7 @@ public class ScheduleNotificationService {
             String keyPattern = String.join(",",errorMessages);
 
             // check cache for notification
-            Integer maxCheckMetric = 3;
+            Integer maxCheckMetric = 1;
             Integer cacheCount = cacheTriggerCountNotification.get(keyPattern);
             // String currentJbossIp = ServerJboss.getServerIP();
             if(cacheCount != null){
@@ -177,30 +177,26 @@ public class ScheduleNotificationService {
                 cacheCount = 0;
             }
 
-            if(cacheCount < 1){ 
-                if (errorMessages.size() > 0) {
-                    for (String errorMessage : errorMessages) {
-                        String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
+            if (errorMessages.size() > 0) {
+                for (String errorMessage : errorMessages) {
+                    String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
 
-                        SendNotification(alertAction, errorMessage, metric);
-                        
-                        LogFlie.logMessage(
-                            "ScheduleNotificationService", 
-                            String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
-                            String.format(
-                                "%s %s %s",
-                                df.format(new Date()),
-                                alertAction,
-                                errorMessage
-                            )
-                        );
-
-                    }
+                    SendNotification(alertAction, errorMessage, metric);
+                    
+                    LogFlie.logMessage(
+                        "ScheduleNotificationService", 
+                        String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
+                        String.format(
+                            "%s %s %s",
+                            df.format(new Date()),
+                            alertAction,
+                            errorMessage
+                        )
+                    );
                 }
+                // save cache for notification
+                cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
             }
-
-            // save cache for notification
-            cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
         }
         return cacheTriggerCountNotification;
     }
@@ -224,11 +220,11 @@ public class ScheduleNotificationService {
             Integer cacheCount = cacheTriggerCountNotification.get(keyPattern);
             // String currentJbossIp = ServerJboss.getServerIP();
             if(cacheCount != null){
-                if(cacheCount >= maxCheckMetric){
+                if(cacheCount > maxCheckMetric){
                     return cacheTriggerCountNotification;
                 }
             }else{
-                cacheCount = 0;
+                cacheCount = 1;
             }
 
             if(cacheCount <= maxCheckMetric){ 
@@ -250,11 +246,10 @@ public class ScheduleNotificationService {
                         );
 
                     }
+                    // save cache for notification
+                    cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
                 }
             }
-
-            // save cache for notification
-            cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
         }
         return cacheTriggerCountNotification;
     }
