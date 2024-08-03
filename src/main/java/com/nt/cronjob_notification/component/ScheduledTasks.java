@@ -52,7 +52,7 @@ public class ScheduledTasks {
             }
             for (String message : messages){
                 message = message + " at time " + currentTime;
-                scheduleNotificationService.SendNotification("CheckNumberOfTriggerInOrderTypeDatabase", message, metric);
+                scheduleNotificationService.SendNotification("NumberOfTriggerOverLimit", message, metric);
             }
         }
 
@@ -66,7 +66,7 @@ public class ScheduledTasks {
             if (count > MaxCountPerDay){
                 continue;
             }
-            scheduleNotificationService.SendNotification("CheckOMRabbitMQ", message, metric);
+            scheduleNotificationService.SendNotification("OmNotConnect", message, metric);
         }
 
         for (String key : cacheDatabaseNotification.keySet()){
@@ -79,7 +79,7 @@ public class ScheduledTasks {
             if (count > MaxCountPerDay){
                 continue;
             }
-            scheduleNotificationService.SendNotification("CheckOMDatabase", message, metric);
+            scheduleNotificationService.SendNotification("DbOmNotConnect", message, metric);
         }
         // cacheTriggerCountNotification = scheduleNotificationService.CheckTriggerMessage20MMetrics(cacheTriggerCountNotification);
         // scheduleNotificationService.CheckRabbitMQMetrics(cacheDBOMCountNotification, stackOMSendNotification);
