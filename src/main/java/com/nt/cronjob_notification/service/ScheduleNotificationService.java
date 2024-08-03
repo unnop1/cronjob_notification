@@ -10,11 +10,13 @@ import com.nt.cronjob_notification.entity.SaMetricNotificationEntity;
 import com.nt.cronjob_notification.entity.view.trigger.TriggerOrderTypeCount;
 import com.nt.cronjob_notification.log.LogFlie;
 import com.nt.cronjob_notification.util.Condition;
+import com.nt.cronjob_notification.util.DateTime;
 import com.nt.cronjob_notification.util.ServerJboss;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -99,15 +101,30 @@ public class ScheduleNotificationService {
         
     }
 
-    public void SendNotification(String action, String messageNotification, SaMetricNotificationEntity metricConfig) {
-        List<String> emailList = Arrays.asList(metricConfig.getEmail().split(","));
-
+    public boolean checkSendNotification(){
+        
         String currentJbossIp = ServerJboss.getServerIP();
         // lineNotifyService.SendNotification("ip send: "+wlip, metricConfig.getLINE_TOKEN());
         if (currentJbossIp!=null) {
             if(!currentJbossIp.equals(wlip)){
-                return;
+                return false;
             }
+        }
+
+        LocalTime start = LocalTime.of(8, 0); // 08:00 AM
+        LocalTime end = LocalTime.of(17, 0);  // 05:00 PM
+        if(!DateTime.isCurrentTimeInRange(start, end)){
+            return false;
+        }
+
+        return true; 
+    }
+
+    public void SendNotification(String action, String messageNotification, SaMetricNotificationEntity metricConfig) {
+        List<String> emailList = Arrays.asList(metricConfig.getEmail().split(","));
+
+        if (!checkSendNotification()) {
+            return;
         }
         
         try {
