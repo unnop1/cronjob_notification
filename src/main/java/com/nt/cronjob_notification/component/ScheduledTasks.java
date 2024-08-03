@@ -5,6 +5,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.swing.RowFilter.Entry;
 
@@ -17,80 +18,80 @@ import com.nt.cronjob_notification.service.ScheduleNotificationService;
 @Component
 public class ScheduledTasks {
 
-    private HashMap<String,Integer> cacheDBOMCountNotification = new HashMap<String,Integer>();
+    private Integer MaxCountPerDay = 3;
 
-    private HashMap<String,Integer> cacheOMCountNotification = new HashMap<String,Integer>();
+    private HashMap<String, HashMap<String, Object>> cacheTriggerNotification = new HashMap<String, HashMap<String, Object>>();
 
-    private HashMap<String,Integer> cacheTriggerCountNotification = new HashMap<String,Integer>();
+    private HashMap<String, HashMap<String, Object>> cacheRabbitMQNotification = new HashMap<String, HashMap<String, Object>>();
 
-    private HashMap<String,SaMetricNotificationEntity> stackDBOMSendNotification = new HashMap<String,SaMetricNotificationEntity>();
+    HashMap<String, HashMap<String, Object>> cacheDatabaseNotification = new HashMap<String, HashMap<String, Object>>();
 
-    private HashMap<String,SaMetricNotificationEntity> stackOMSendNotification = new HashMap<String,SaMetricNotificationEntity>();
-
-    private HashMap<String,SaMetricNotificationEntity> stackTriggerMessageSendNotification = new HashMap<String,SaMetricNotificationEntity>();
 
     @Autowired
     private ScheduleNotificationService scheduleNotificationService;
 
-    // Check alert metric only message
-    @Scheduled(cron = "0 */20 * * * *") // Cron expression for running every minute 0 */20 * * * *
-    public void executeRabbitMQError() throws SQLException, IOException {
-        scheduleNotificationService.CheckRabbitMQMetrics(cacheDBOMCountNotification, stackOMSendNotification);
-    }
-
-    // Check alert metric only message
-    @Scheduled(cron = "0 */20 * * * *") // Cron expression for running every minute 0 */20 * * * *
-    public void executeDatabaseOMError() throws SQLException, IOException {
-        scheduleNotificationService.CheckDatabaseOMMetrics(cacheOMCountNotification, stackDBOMSendNotification);
-    }
-
     // Check alert metric trigger message
     @Scheduled(cron = "0 */5 * * * *") // Cron expression for running every minute 0 */20 * * * *
-    public void executeTrigger5MMessage() throws SQLException, IOException {
-        cacheTriggerCountNotification = scheduleNotificationService.CheckTriggerMessage5MMetrics(cacheTriggerCountNotification);
+    public void executeCheckAlertMessage() throws SQLException, IOException {
+        cacheTriggerNotification = scheduleNotificationService.CheckTriggerMessageMetrics(cacheTriggerNotification);
+        cacheRabbitMQNotification = scheduleNotificationService.CheckRabbitMQMetrics(cacheRabbitMQNotification);
+        cacheDatabaseNotification = scheduleNotificationService.CheckDatabaseOMMetrics(cacheDatabaseNotification);
     }
 
     // Check alert metric trigger message
     @Scheduled(cron = "0 */20 * * * *") // Cron expression for running every minute 0 */20 * * * *
-    public void executeTrigger20MMessage() throws SQLException, IOException {
-        cacheTriggerCountNotification = scheduleNotificationService.CheckTriggerMessage20MMetrics(cacheTriggerCountNotification);
+    public void executeStackSendMessage() throws SQLException, IOException {
+        for (String key : cacheTriggerNotification.keySet()){
+            HashMap<String,Object> cacheTrigger = cacheTriggerNotification.get(key);
+            String[] messages = String.valueOf(cacheTrigger.get("message")).split(",");
+            Integer count = Integer.valueOf(cacheTrigger.get("count").toString());
+            String currentTime = cacheTrigger.get("time").toString();
+            SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheTrigger.get("metric");
+            if (count > MaxCountPerDay){
+                continue;
+            }
+            for (String message : messages){
+                message = message + " at time " + currentTime;
+                scheduleNotificationService.SendNotification("CheckNumberOfTriggerInOrderTypeDatabase", message, metric);
+            }
+        }
+
+        for (String key : cacheRabbitMQNotification.keySet()){
+            HashMap<String,Object> cacheRabbitMQ = cacheRabbitMQNotification.get(key);
+            String message = String.valueOf(cacheRabbitMQ.get("message"));
+            Integer count = Integer.valueOf(cacheRabbitMQ.get("count").toString());
+            String currentTime = cacheRabbitMQ.get("time").toString();
+            message = message + " at time " + currentTime;
+            SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheRabbitMQ.get("metric");
+            if (count > MaxCountPerDay){
+                continue;
+            }
+            scheduleNotificationService.SendNotification("CheckOMRabbitMQ", message, metric);
+        }
+
+        for (String key : cacheDatabaseNotification.keySet()){
+            HashMap<String,Object> cacheOMDB = cacheDatabaseNotification.get(key);
+            String message = String.valueOf(cacheOMDB.get("message"));
+            Integer count = Integer.valueOf(cacheOMDB.get("count").toString());
+            String currentTime = cacheOMDB.get("time").toString();
+            message = message + " at time " + currentTime;
+            SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheOMDB.get("metric");
+            if (count > MaxCountPerDay){
+                continue;
+            }
+            scheduleNotificationService.SendNotification("CheckOMDatabase", message, metric);
+        }
+        // cacheTriggerCountNotification = scheduleNotificationService.CheckTriggerMessage20MMetrics(cacheTriggerCountNotification);
+        // scheduleNotificationService.CheckRabbitMQMetrics(cacheDBOMCountNotification, stackOMSendNotification);
+        // scheduleNotificationService.CheckDatabaseOMMetrics(cacheOMCountNotification, stackDBOMSendNotification);
     }
-
-    // // send notification metric only message
-    // @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
-    // public void sendAlertDatabaseOMNotification() throws SQLException, IOException {
-    //     for (String message : stackDBOMSendNotification.keySet()) {
-    //         scheduleNotificationService.SendNotification("DbOmNotConnect", message, stackDBOMSendNotification.get(message));
-    //     }
-    //     stackDBOMSendNotification = new HashMap<String,SaMetricNotificationEntity>();
-    // }
-
-    // // send notification metric only message
-    // @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
-    // public void sendAlertRabbitMQNotification() throws SQLException, IOException {
-    //     for (String message : stackOMSendNotification.keySet()) {
-    //         scheduleNotificationService.SendNotification("OmNotConnect", message, stackOMSendNotification.get(message));
-    //     }
-    //     stackOMSendNotification = new HashMap<String,SaMetricNotificationEntity>();
-    // }
-
-    // // send notification metric only message
-    // @Scheduled(cron = "0 */20 0 * * *") // Cron expression for running every minute
-    // public void sendAlertTriggerNotification() throws SQLException, IOException {
-    //     for (String messages : stackTriggerMessageSendNotification.keySet()) {
-    //         for (String message : messages.split(",")) {
-    //             scheduleNotificationService.SendNotification("CheckNumberOfTriggerInOrderTypeDatabase", message, stackTriggerMessageSendNotification.get(message));
-    //         }
-    //     }
-    //     stackTriggerMessageSendNotification = new HashMap<String,SaMetricNotificationEntity>();
-    // }
 
     // clear cache notification metric
     @Scheduled(cron = "0 0 0 * * *") // Cron expression for running every minute
     public void clearCache() throws SQLException, IOException {
-        cacheDBOMCountNotification = new HashMap<String,Integer>();
-        cacheOMCountNotification = new HashMap<String,Integer>();
-        cacheTriggerCountNotification = new HashMap<String,Integer>();
+        cacheDatabaseNotification = new HashMap<String, HashMap<String, Object>>();
+        cacheTriggerNotification = new HashMap<String, HashMap<String, Object>>();
+        cacheRabbitMQNotification = new HashMap<String, HashMap<String, Object>>();
 
     }
 }
