@@ -114,11 +114,11 @@ public class ScheduleNotificationService {
             }
         }
 
-        LocalTime start = LocalTime.of(8, 0); // 08:00 AM
-        LocalTime end = LocalTime.of(17, 0);  // 05:00 PM
-        if(!DateTime.isCurrentTimeInRange(start, end)){
-            return false;
-        }
+        // LocalTime start = LocalTime.of(8, 0); // 08:00 AM
+        // LocalTime end = LocalTime.of(17, 0);  // 05:00 PM
+        // if(!DateTime.isCurrentTimeInRange(start, end)){
+        //     return false;
+        // }
 
         return true; 
     }
