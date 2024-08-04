@@ -10,6 +10,7 @@ import java.util.List;
 import javax.swing.RowFilter.Entry;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.nt.cronjob_notification.entity.SaMetricNotificationEntity;
@@ -17,6 +18,9 @@ import com.nt.cronjob_notification.service.ScheduleNotificationService;
 
 @Component
 public class ScheduledTasks {
+    
+    @Value("${env.name}")
+    private String ENVNAME;
 
     private Integer MaxCountPerDay = 3;
 
@@ -80,7 +84,7 @@ public class ScheduledTasks {
                 continue;
             }
             for (String message : messages){
-                message = message + " at time " + currentTime;
+                message = "[" + ENVNAME+ "] " + message + " at time " + currentTime;
                 scheduleNotificationService.SendNotification("NumberOfTriggerOverLimit", message, metric);
             }
         }
@@ -90,7 +94,7 @@ public class ScheduledTasks {
             String message = String.valueOf(cacheRabbitMQ.get("message"));
             // Integer count = Integer.valueOf(cacheRabbitMQ.get("count").toString());
             String currentTime = cacheRabbitMQ.get("time").toString();
-            message = message + " at time " + currentTime;
+            message = "[" + ENVNAME+ "] " + message + " at time " + currentTime;
             SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheRabbitMQ.get("metric");
             if (cacheCount.get(key) > MaxCountPerDay){
                 continue;
@@ -103,7 +107,7 @@ public class ScheduledTasks {
             String message = String.valueOf(cacheOMDB.get("message"));
             // Integer count = Integer.valueOf(cacheOMDB.get("count").toString());
             String currentTime = cacheOMDB.get("time").toString();
-            message = message + " at time " + currentTime;
+            message = "[" + ENVNAME+ "] " + message + " at time " + currentTime;
             SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheOMDB.get("metric");
             if (cacheCount.get(key) > MaxCountPerDay){
                 continue;
