@@ -174,8 +174,6 @@ public class ScheduleNotificationService {
     public HashMap<String, HashMap<String, Object>> checkTriggerMessageMetrics(HashMap<String, HashMap<String, Object>> cacheTriggerNotification) throws SQLException, IOException {
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
         HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String currentTime = df.format(new Date());
     
         for (SaMetricNotificationEntity metric : metrics) {
             if (metric.getTRIGGER_IS_ACTIVE().equals(0)) {
@@ -192,34 +190,35 @@ public class ScheduleNotificationService {
     
             if (cacheTrigger != null && (Integer) cacheTrigger.get("count") >= 1) {
                 // Notification has already been sent for this key pattern
-                continue;
-            }
-    
-            for (String errorMessage : errorMessages) {
-                String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
-                String alertMsg = String.format("[%s] %s at time %s", ENVNAME, errorMessage, currentTime);
-    
-                SendNotification(alertAction, alertMsg, metric);
-    
-                LogFlie.logMessage(
-                    "ScheduleNotificationService",
-                    String.format("metric/%s/trigger_overload", LogFlie.dateFolderName()),
-                    String.format(
-                        "%s %s %s",
-                        df.format(new Date()),
-                        alertAction,
-                        alertMsg
-                    )
-                );
-            }
-    
-            if (cacheTrigger == null) {
+                cacheTrigger.put("count", (Integer) cacheTrigger.get("count") + 1);
+            }else{
+                SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String currentTime = df.format(new Date());
                 cacheTrigger = new HashMap<>();
+                cacheTrigger.put("time", currentTime);
+                cacheTrigger.put("count", 1);
+                cacheTrigger.put("message", keyPattern);
+                cacheTrigger.put("metric", metric);
+    
+                for (String errorMessage : errorMessages) {
+                    String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
+                    String alertMsg = String.format("[%s] %s at time %s", ENVNAME, errorMessage, currentTime);
+        
+                    SendNotification(alertAction, alertMsg, metric);
+        
+                    LogFlie.logMessage(
+                        "ScheduleNotificationService",
+                        String.format("metric/%s/trigger_overload", LogFlie.dateFolderName()),
+                        String.format(
+                            "%s %s %s",
+                            df.format(new Date()),
+                            alertAction,
+                            alertMsg
+                        )
+                    );
+                }
             }
-            cacheTrigger.put("message", keyPattern);
-            cacheTrigger.put("metric", metric);
-            cacheTrigger.put("time", currentTime);
-            cacheTrigger.put("count", 1);
+            
             cacheTriggerNotification.put(keyPattern, cacheTrigger);
         }
         return cacheTriggerNotification;
@@ -232,7 +231,7 @@ public class ScheduleNotificationService {
         String currentTime = df.format(new Date());
     
         for (SaMetricNotificationEntity metric : metrics) {
-            if (metric.getTRIGGER_IS_ACTIVE().equals(0)) {
+            if (metric.getDB_OM_NOT_CONNECT().equals(0)) {
                 continue;
             }
     
@@ -280,7 +279,7 @@ public class ScheduleNotificationService {
         String currentTime = df.format(new Date());
     
         for (SaMetricNotificationEntity metric : metrics) {
-            if (metric.getTRIGGER_IS_ACTIVE().equals(0)) {
+            if (metric.getOM_NOT_CONNECT().equals(0)) {
                 continue;
             }
     

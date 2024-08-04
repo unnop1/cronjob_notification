@@ -114,9 +114,9 @@ public class ScheduledTasks {
             }
             scheduleNotificationService.SendNotification("DbOmNotConnect", message, metric);
         }
-        cacheDatabaseNotification = new HashMap<String, HashMap<String, Object>>();
-        cacheTriggerNotification = new HashMap<String, HashMap<String, Object>>();
-        cacheRabbitMQNotification = new HashMap<String, HashMap<String, Object>>();
+        // cacheDatabaseNotification = new HashMap<String, HashMap<String, Object>>();
+        // cacheTriggerNotification = new HashMap<String, HashMap<String, Object>>();
+        // cacheRabbitMQNotification = new HashMap<String, HashMap<String, Object>>();
         
     }
 
