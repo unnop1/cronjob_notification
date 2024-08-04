@@ -26,6 +26,9 @@ import java.util.List;
 @Service
 public class ScheduleNotificationService {
 
+    @Value("${env.name}")
+    private String ENVNAME;
+
     @Value("${notification.whitelist.ip}")
     private String wlip;
 
@@ -203,8 +206,9 @@ public class ScheduleNotificationService {
             if (errorMessages.size() > 0) {
                 for (String errorMessage : errorMessages) {
                     String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
+                    String alertMsg = String.format("[%s] %s %s", ENVNAME, errorMessage, currentTime);
 
-                    SendNotification(alertAction, errorMessage, metric);
+                    SendNotification(alertAction, alertMsg, metric);
                     
                     LogFlie.logMessage(
                         "ScheduleNotificationService", 
@@ -213,7 +217,7 @@ public class ScheduleNotificationService {
                             "%s %s %s",
                             df.format(new Date()),
                             alertAction,
-                            errorMessage
+                            alertMsg
                         )
                     );
                 }
@@ -227,59 +231,6 @@ public class ScheduleNotificationService {
         }
         return cacheTriggerNotification;
     }
-
-    // public HashMap<String, Integer> CheckTriggerMessage20MMetrics(HashMap<String, Integer> cacheTriggerCountNotification) throws SQLException, IOException{
-    //     List<SaMetricNotificationEntity> metrics = ListAllMetrics();
-    //     HashMap<String, Integer> mapOrderTypeTriggerSend = GetMapOrderTypes();
-        
-    //     for (SaMetricNotificationEntity metric : metrics) {
-    //         if (metric.getTRIGGER_IS_ACTIVE().equals(0)){
-    //             continue;
-    //         }
-
-    //         // String triggerNotiJson = Convert.clobToString(metric.getTRIGGER_NOTI_JSON());
-    //         List<String> errorMessages = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
-    //         // String errorMessage = "more than setting to metric";
-    //         String keyPattern = String.join(",",errorMessages);
-
-    //         // check cache for notification
-    //         Integer maxCheckMetric = 3;
-    //         Integer cacheCount = cacheTriggerCountNotification.get(keyPattern);
-    //         // String currentJbossIp = ServerJboss.getServerIP();
-    //         if(cacheCount != null){
-    //             if(cacheCount > maxCheckMetric){
-    //                 return cacheTriggerCountNotification;
-    //             }
-    //         }else{
-    //             cacheCount = 1;
-    //         }
-
-    //         if(cacheCount <= maxCheckMetric){ 
-    //             if (errorMessages.size() > 0) {
-    //                 for (String errorMessage : errorMessages) {
-    //                     String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
-
-    //                     SendNotification(alertAction, errorMessage, metric);
-                        
-    //                     LogFlie.logMessage(
-    //                         "ScheduleNotificationService", 
-    //                         String.format("metric/%s/trigger_overload",LogFlie.dateFolderName()),
-    //                         String.format(
-    //                             "%s %s %s",
-    //                             df.format(new Date()),
-    //                             alertAction,
-    //                             errorMessage
-    //                         )
-    //                     );
-
-    //                 }
-    //                 // save cache for notification
-    //                 cacheTriggerCountNotification.put(keyPattern, cacheCount+1);
-    //             }
-    //         }
-    //     }
-    //     return cacheTriggerCountNotification;
-    // }
 
     public HashMap<String, HashMap<String, Object>> CheckDatabaseOMMetrics(HashMap<String, HashMap<String, Object>> cacheOnlyMsgNotification) throws SQLException, IOException{
         List<SaMetricNotificationEntity> metrics = ListAllMetrics();
@@ -311,7 +262,7 @@ public class ScheduleNotificationService {
 
             if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
                 String alertAction = "DbOmNotConnect";
-                String alertMessage = "can not connect to om database";
+                String alertMessage = String.format("[%s] %s %s", ENVNAME, "can not connect to om database", currentTime);
                 
                 SendNotification(alertAction,alertMessage,metric);
                 
@@ -366,7 +317,7 @@ public class ScheduleNotificationService {
 
             if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
                 String alertAction = "OmNotConnect";
-                String alertMessage = "can not connect to rabbitmq";
+                String alertMessage = String.format("[%s] %s %s", ENVNAME, "can not connect to rabbitmq", currentTime);
 
                 if(cacheCount < maxCheckMetric){                
                     SendNotification(alertAction,alertMessage,metric);
