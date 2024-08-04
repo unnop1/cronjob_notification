@@ -20,6 +20,8 @@ public class ScheduledTasks {
 
     private Integer MaxCountPerDay = 3;
 
+    private HashMap<String, Integer> cacheCount = new HashMap<String, Integer>();
+
     private HashMap<String, HashMap<String, Object>> cacheTriggerNotification = new HashMap<String, HashMap<String, Object>>();
 
     private HashMap<String, HashMap<String, Object>> cacheRabbitMQNotification = new HashMap<String, HashMap<String, Object>>();
@@ -36,6 +38,33 @@ public class ScheduledTasks {
         cacheTriggerNotification = scheduleNotificationService.CheckTriggerMessageMetrics(cacheTriggerNotification);
         cacheRabbitMQNotification = scheduleNotificationService.CheckRabbitMQMetrics(cacheRabbitMQNotification);
         cacheDatabaseNotification = scheduleNotificationService.CheckDatabaseOMMetrics(cacheDatabaseNotification);
+
+        for (String key : cacheTriggerNotification.keySet()){
+            if(cacheCount.get(key)!= null){
+                Integer counter = cacheCount.get(key);
+                cacheCount.put(key, counter+1);
+            }else{
+                cacheCount.put(key, 1);
+            }
+        }
+
+        for (String key : cacheRabbitMQNotification.keySet()){
+            if(cacheCount.get(key)!= null){
+                Integer counter = cacheCount.get(key);
+                cacheCount.put(key, counter+1);
+            }else{
+                cacheCount.put(key, 1);
+            }
+        }
+
+        for (String key : cacheDatabaseNotification.keySet()){
+            if(cacheCount.get(key)!= null){
+                Integer counter = cacheCount.get(key);
+                cacheCount.put(key, counter+1);
+            }else{
+                cacheCount.put(key, 1);
+            }
+        }
     }
 
     // Check alert metric trigger message
@@ -44,10 +73,10 @@ public class ScheduledTasks {
         for (String key : cacheTriggerNotification.keySet()){
             HashMap<String,Object> cacheTrigger = cacheTriggerNotification.get(key);
             String[] messages = String.valueOf(cacheTrigger.get("message")).split(",");
-            Integer count = Integer.valueOf(cacheTrigger.get("count").toString());
+            // Integer count = Integer.valueOf(cacheTrigger.get("count").toString());
             String currentTime = cacheTrigger.get("time").toString();
             SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheTrigger.get("metric");
-            if (count > MaxCountPerDay){
+            if (cacheCount.get(key) > MaxCountPerDay){
                 continue;
             }
             for (String message : messages){
@@ -59,11 +88,11 @@ public class ScheduledTasks {
         for (String key : cacheRabbitMQNotification.keySet()){
             HashMap<String,Object> cacheRabbitMQ = cacheRabbitMQNotification.get(key);
             String message = String.valueOf(cacheRabbitMQ.get("message"));
-            Integer count = Integer.valueOf(cacheRabbitMQ.get("count").toString());
+            // Integer count = Integer.valueOf(cacheRabbitMQ.get("count").toString());
             String currentTime = cacheRabbitMQ.get("time").toString();
             message = message + " at time " + currentTime;
             SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheRabbitMQ.get("metric");
-            if (count > MaxCountPerDay){
+            if (cacheCount.get(key) > MaxCountPerDay){
                 continue;
             }
             scheduleNotificationService.SendNotification("OmNotConnect", message, metric);
@@ -72,11 +101,11 @@ public class ScheduledTasks {
         for (String key : cacheDatabaseNotification.keySet()){
             HashMap<String,Object> cacheOMDB = cacheDatabaseNotification.get(key);
             String message = String.valueOf(cacheOMDB.get("message"));
-            Integer count = Integer.valueOf(cacheOMDB.get("count").toString());
+            // Integer count = Integer.valueOf(cacheOMDB.get("count").toString());
             String currentTime = cacheOMDB.get("time").toString();
             message = message + " at time " + currentTime;
             SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheOMDB.get("metric");
-            if (count > MaxCountPerDay){
+            if (cacheCount.get(key) > MaxCountPerDay){
                 continue;
             }
             scheduleNotificationService.SendNotification("DbOmNotConnect", message, metric);
