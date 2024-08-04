@@ -39,9 +39,9 @@ public class ScheduledTasks {
     // Check alert metric trigger message
     @Scheduled(cron = "0 */5 * * * *") // Cron expression for running every minute 0 */20 * * * *
     public void executeCheckAlertMessage() throws SQLException, IOException {
-        cacheTriggerNotification = scheduleNotificationService.CheckTriggerMessageMetrics(cacheTriggerNotification);
-        cacheRabbitMQNotification = scheduleNotificationService.CheckRabbitMQMetrics(cacheRabbitMQNotification);
-        cacheDatabaseNotification = scheduleNotificationService.CheckDatabaseOMMetrics(cacheDatabaseNotification);
+        cacheTriggerNotification = scheduleNotificationService.checkTriggerMessageMetrics(cacheTriggerNotification);
+        cacheRabbitMQNotification = scheduleNotificationService.checkRabbitMQMetrics(cacheRabbitMQNotification);
+        cacheDatabaseNotification = scheduleNotificationService.checkDatabaseOMMetrics(cacheDatabaseNotification);
 
         for (String key : cacheTriggerNotification.keySet()){
             if(cacheCount.get(key)!= null){
