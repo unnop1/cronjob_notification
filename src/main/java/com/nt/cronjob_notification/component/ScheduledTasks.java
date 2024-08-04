@@ -81,9 +81,10 @@ public class ScheduledTasks {
             }
             scheduleNotificationService.SendNotification("DbOmNotConnect", message, metric);
         }
-        // cacheTriggerCountNotification = scheduleNotificationService.CheckTriggerMessage20MMetrics(cacheTriggerCountNotification);
-        // scheduleNotificationService.CheckRabbitMQMetrics(cacheDBOMCountNotification, stackOMSendNotification);
-        // scheduleNotificationService.CheckDatabaseOMMetrics(cacheOMCountNotification, stackDBOMSendNotification);
+        cacheDatabaseNotification = new HashMap<String, HashMap<String, Object>>();
+        cacheTriggerNotification = new HashMap<String, HashMap<String, Object>>();
+        cacheRabbitMQNotification = new HashMap<String, HashMap<String, Object>>();
+        
     }
 
     // clear cache notification metric
