@@ -206,7 +206,7 @@ public class ScheduleNotificationService {
             if (errorMessages.size() > 0) {
                 for (String errorMessage : errorMessages) {
                     String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
-                    String alertMsg = String.format("[%s] %s %s", ENVNAME, errorMessage, currentTime);
+                    String alertMsg = String.format("[%s] %s at time %s", ENVNAME, errorMessage, currentTime);
 
                     SendNotification(alertAction, alertMsg, metric);
                     
@@ -262,7 +262,7 @@ public class ScheduleNotificationService {
 
             if (metric.getDB_OM_NOT_CONNECT().equals(1) && !isOMDatabaseStatusOK){
                 String alertAction = "DbOmNotConnect";
-                String alertMessage = String.format("[%s] %s %s", ENVNAME, "can not connect to om database", currentTime);
+                String alertMessage = String.format("[%s] %s at time %s", ENVNAME, "can not connect to om database", currentTime);
                 
                 SendNotification(alertAction,alertMessage,metric);
                 
@@ -317,7 +317,7 @@ public class ScheduleNotificationService {
 
             if (metric.getOM_NOT_CONNECT().equals(1) && !isRabbitMQStatusOK){
                 String alertAction = "OmNotConnect";
-                String alertMessage = String.format("[%s] %s %s", ENVNAME, "can not connect to rabbitmq", currentTime);
+                String alertMessage = String.format("[%s] %s at time %s", ENVNAME, "can not connect to rabbitmq", currentTime);
 
                 if(cacheCount < maxCheckMetric){                
                     SendNotification(alertAction,alertMessage,metric);
