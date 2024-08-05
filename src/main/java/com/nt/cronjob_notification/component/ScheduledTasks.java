@@ -87,6 +87,8 @@ public class ScheduledTasks {
                 message = "[" + ENVNAME+ "] " + message + " at time " + currentTime;
                 scheduleNotificationService.SendNotification("NumberOfTriggerOverLimit", message, metric);
             }
+            cacheTrigger.put("count", count+1);
+            cacheTriggerNotification.put(key, cacheTrigger);
         }
 
         for (String key : cacheRabbitMQNotification.keySet()){
@@ -99,7 +101,10 @@ public class ScheduledTasks {
             if (count > MaxCountPerDay){
                 continue;
             }
+            
             scheduleNotificationService.SendNotification("OmNotConnect", message, metric);
+            cacheRabbitMQ.put("count", count+1);
+            cacheRabbitMQNotification.put(key, cacheRabbitMQ);
         }
 
         for (String key : cacheDatabaseNotification.keySet()){
@@ -113,6 +118,8 @@ public class ScheduledTasks {
                 continue;
             }
             scheduleNotificationService.SendNotification("DbOmNotConnect", message, metric);
+            cacheOMDB.put("count", count+1);
+            cacheDatabaseNotification.put(key, cacheOMDB);
         }
         // cacheDatabaseNotification = new HashMap<String, HashMap<String, Object>>();
         // cacheTriggerNotification = new HashMap<String, HashMap<String, Object>>();
