@@ -188,7 +188,7 @@ public class ScheduleNotificationService {
             TriggerCheck triggerCheck = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
             List<String> errorMessages = triggerCheck.getMessageList();
             List<String> patternList = triggerCheck.getPatternList();
-            if (errorMessages.isEmpty()) {
+            if (errorMessages.size() <= 0) {
                 continue;
             }
     
