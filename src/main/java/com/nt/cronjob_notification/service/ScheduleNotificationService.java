@@ -209,7 +209,7 @@ public class ScheduleNotificationService {
     
                 for (String errorMessage : errorMessages) {
                     String alertAction = "CheckNumberOfTriggerInOrderTypeDatabase";
-                    String alertMsg = String.format("[%s] %s at time %s", ENVNAME, errorMessage, currentTime);
+                    String alertMsg = String.format("NEW ALERT! [%s] %s at time %s", ENVNAME, errorMessage, currentTime);
         
                     SendNotification(alertAction, alertMsg, metric);
         

@@ -37,7 +37,7 @@ public class ScheduledTasks {
     private ScheduleNotificationService scheduleNotificationService;
 
     // Check alert metric trigger message
-    @Scheduled(cron = "0 */1 * * * *") // Cron expression for running every minute 0 */20 * * * *
+    @Scheduled(cron = "0 */5 * * * *") // Cron expression for running every minute 0 */20 * * * *
     public void executeCheckAlertMessage() throws SQLException, IOException {
         cacheTriggerNotification = scheduleNotificationService.checkTriggerMessageMetrics(cacheTriggerNotification);
         cacheRabbitMQNotification = scheduleNotificationService.checkRabbitMQMetrics(cacheRabbitMQNotification);
@@ -72,7 +72,7 @@ public class ScheduledTasks {
     }
 
     // Check alert metric trigger message
-    @Scheduled(cron = "0 */5 * * * *") // Cron expression for running every minute 0 */20 * * * *
+    @Scheduled(cron = "0 */20 * * * *") // Cron expression for running every minute 0 */20 * * * *
     public void executeStackSendMessage() throws SQLException, IOException {
         for (String key : cacheTriggerNotification.keySet()){
             HashMap<String,Object> cacheTrigger = cacheTriggerNotification.get(key);
@@ -84,7 +84,7 @@ public class ScheduledTasks {
                 continue;
             }
             for (String message : messages){
-                message = "[" + ENVNAME+ "] (5m) " + message + " at time " + currentTime;
+                message = "[" + ENVNAME+ "] " + message + " at time " + currentTime;
                 scheduleNotificationService.SendNotification("NumberOfTriggerOverLimit", message, metric);
             }
             cacheTrigger.put("count", count+1);
