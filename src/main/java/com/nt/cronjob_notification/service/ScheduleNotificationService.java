@@ -101,6 +101,8 @@ public class ScheduleNotificationService {
                     }
                 }
             }
+            triggerCheck.setMessageList(metricMessages);
+            triggerCheck.setPatternList(metricPatterns);
             // System.out.println("notificationMessage:"+notificationMessage);
         }catch(Exception e){
             metricMessages.add(e.getMessage());
