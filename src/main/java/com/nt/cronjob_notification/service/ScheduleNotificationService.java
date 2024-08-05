@@ -9,6 +9,7 @@ import com.nt.cronjob_notification.entity.NotificationMsgEntity;
 import com.nt.cronjob_notification.entity.SaMetricNotificationEntity;
 import com.nt.cronjob_notification.entity.view.trigger.TriggerOrderTypeCount;
 import com.nt.cronjob_notification.log.LogFlie;
+import com.nt.cronjob_notification.model.distribute.manage.metric.TriggerCheck;
 import com.nt.cronjob_notification.util.Condition;
 import com.nt.cronjob_notification.util.DateTime;
 import com.nt.cronjob_notification.util.ServerJboss;
@@ -74,10 +75,12 @@ public class ScheduleNotificationService {
         return mapOrderTypeTrgHashMap;
     }
 
-    private List<String> CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON, HashMap<String, Integer> mapOrderTypeTriggerSend) {
+    private TriggerCheck CheckNumberOfTriggerInOrderTypeDatabase(String triggerNotificationJSON, HashMap<String, Integer> mapOrderTypeTriggerSend) {
+        TriggerCheck triggerCheck = new TriggerCheck();
         List<String> metricMessages = new ArrayList<String>();
+        List<String> metricPatterns = new ArrayList<String>();
         if (triggerNotificationJSON== null){
-            return metricMessages;
+            return triggerCheck;
         }
         try{
             JSONArray triggerConditions = new JSONArray(triggerNotificationJSON);
@@ -92,7 +95,9 @@ public class ScheduleNotificationService {
                     System.out.println("Value for key '" + OrderTypeNameConfig + "': " + value);
                     if (Condition.doNumberOperation(operatorConfig, value, triggerCountConfig )){
                         String alertMessage = "OrderType: " + OrderTypeNameConfig + " Total :" + value + "  "+ operatorConfig +" Metric value :" + triggerCountConfig;
+                        String pattern = OrderTypeNameConfig + "_" + operatorConfig + "_" + triggerCountConfig;
                         metricMessages.add(alertMessage);
+                        metricPatterns.add(pattern);
                     }
                 }
             }
@@ -100,7 +105,7 @@ public class ScheduleNotificationService {
         }catch(Exception e){
             metricMessages.add(e.getMessage());
         }
-        return metricMessages;
+        return triggerCheck;
         
     }
 
@@ -180,12 +185,14 @@ public class ScheduleNotificationService {
                 continue;
             }
     
-            List<String> errorMessages = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
+            TriggerCheck triggerCheck = CheckNumberOfTriggerInOrderTypeDatabase(metric.getTRIGGER_NOTI_JSON(), mapOrderTypeTriggerSend);
+            List<String> errorMessages = triggerCheck.getMessageList();
+            List<String> patternList = triggerCheck.getPatternList();
             if (errorMessages.isEmpty()) {
                 continue;
             }
     
-            String keyPattern = String.join(",", errorMessages);
+            String keyPattern = String.join(",", patternList);
             HashMap<String, Object> cacheTrigger = cacheTriggerNotification.get(keyPattern);
     
             if (cacheTrigger != null && (Integer) cacheTrigger.get("count") >= 1) {
