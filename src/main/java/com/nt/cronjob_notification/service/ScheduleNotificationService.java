@@ -224,9 +224,9 @@ public class ScheduleNotificationService {
                         )
                     );
                 }
+                cacheTriggerNotification.put(keyPattern, cacheTrigger);
             }
             
-            cacheTriggerNotification.put(keyPattern, cacheTrigger);
         }
         return cacheTriggerNotification;
     }
