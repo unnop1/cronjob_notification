@@ -198,10 +198,7 @@ public class ScheduleNotificationService {
             String messages = String.join(",", errorMessages);
             HashMap<String, Object> cacheTrigger = cacheTriggerNotification.get(keyPattern);
     
-            if (cacheTrigger != null && (Integer) cacheTrigger.get("count") >= 1) {
-                // Notification has already been sent for this key pattern
-                cacheTrigger.put("count", (Integer) cacheTrigger.get("count") + 1);
-            }else{
+            if (cacheTrigger == null ){
                 SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 String currentTime = df.format(new Date());
                 cacheTrigger = new HashMap<>();
