@@ -193,6 +193,7 @@ public class ScheduleNotificationService {
             }
     
             String keyPattern = String.join(",", patternList);
+            String messages = String.join(",", errorMessages);
             HashMap<String, Object> cacheTrigger = cacheTriggerNotification.get(keyPattern);
     
             if (cacheTrigger != null && (Integer) cacheTrigger.get("count") >= 1) {
@@ -204,7 +205,7 @@ public class ScheduleNotificationService {
                 cacheTrigger = new HashMap<>();
                 cacheTrigger.put("time", currentTime);
                 cacheTrigger.put("count", 1);
-                cacheTrigger.put("message", keyPattern);
+                cacheTrigger.put("message", messages);
                 cacheTrigger.put("metric", metric);
     
                 for (String errorMessage : errorMessages) {
