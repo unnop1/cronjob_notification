@@ -22,7 +22,7 @@ public class ScheduledTasks {
     @Value("${env.name}")
     private String ENVNAME;
 
-    private Integer MaxCountPerDay = 3;
+    private Integer MaxCountPerDay = 2;
 
     private HashMap<String, Integer> cacheCount = new HashMap<String, Integer>();
 
@@ -72,7 +72,7 @@ public class ScheduledTasks {
     }
 
     // Check alert metric trigger message
-    @Scheduled(cron = "0 */20 * * * *") // Cron expression for running every minute 0 */20 * * * *
+    @Scheduled(cron = "0 */30 * * * *") // Cron expression for running every minute 0 */20 * * * *
     public void executeStackSendMessage() throws SQLException, IOException {
         for (String key : cacheTriggerNotification.keySet()){
             HashMap<String,Object> cacheTrigger = cacheTriggerNotification.get(key);
@@ -80,7 +80,7 @@ public class ScheduledTasks {
             Integer count = Integer.valueOf(cacheTrigger.get("count").toString());
             String currentTime = cacheTrigger.get("time").toString();
             SaMetricNotificationEntity metric = (SaMetricNotificationEntity) cacheTrigger.get("metric");
-            if (count > MaxCountPerDay+1){
+            if (count > MaxCountPerDay){
                 continue;
             }
             for (String message : messages){
